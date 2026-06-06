@@ -13,12 +13,14 @@ export default function Wardrobe({
   genome,
   onChange,
   onClose,
+  initialTab = "hats",
 }: {
   genome: Genome;
   onChange: (patch: Partial<Genome>) => void;
   onClose: () => void;
+  initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("hats");
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   const groups: Record<Tab, { list: readonly string[]; labels: Record<string, string>; current: string; field: keyof Genome }> = {
     hats: { list: HAT_LIST, labels: HAT_LABELS, current: genome.chapeau ?? "none", field: "chapeau" },

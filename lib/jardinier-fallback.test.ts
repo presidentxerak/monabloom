@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+import { ruleBasedResponse } from "./jardinier-fallback";
+
+describe("ruleBasedResponse — commands map to exact changes", () => {
+  it("colours", () => {
+    expect(ruleBasedResponse("make her blue").changes.couleurB).toBe("#2a55ff");
+    expect(ruleBasedResponse("turn it red").changes.couleurA).toBe("#ff2244");
+    expect(ruleBasedResponse("paint it green").changes.couleurA).toBe("#22cc77");
+    expect(ruleBasedResponse("give her a yellow glow").changes.couleurA).toBe("#ffe000");
+  });
+
+  it("petals", () => {
+    expect(ruleBasedResponse("more petals please").changes.petales).toBe("+2");
+    expect(ruleBasedResponse("fewer petals").changes.petales).toBe("-2");
+    expect(ruleBasedResponse("9 petals").changes.petales).toBe(9);
+  });
+
+  it("moods", () => {
+    expect(ruleBasedResponse("make her happy").changes.humeur).toBe("joyeuse");
+    expect(ruleBasedResponse("she looks sad").changes.humeur).toBe("melancolique");
+    expect(ruleBasedResponse("be calm").changes.humeur).toBe("sereine");
+  });
+
+  it("accessories", () => {
+    expect(ruleBasedResponse("give her sunglasses").changes.lunettes).toBe("sun");
+    expect(ruleBasedResponse("thug life").changes.lunettes).toBe("thug");
+    expect(ruleBasedResponse("put a top hat on her").changes.chapeau).toBe("tophat");
+    expect(ruleBasedResponse("a crown").changes.chapeau).toBe("crown");
+    expect(ruleBasedResponse("give her boots").changes.chaussures).toBe("boot");
+  });
+
+  it("petal shapes", () => {
+    expect(ruleBasedResponse("diamond petals").changes.forme).toBe(2);
+    expect(ruleBasedResponse("pointed petals").changes.forme).toBe(4);
+    expect(ruleBasedResponse("ring petals").changes.forme).toBe(5);
+  });
+
+  it("does NOT change anything on unrelated text (no spurious changes)", () => {
+    expect(ruleBasedResponse("what is your name?").changes).toEqual({});
+    expect(ruleBasedResponse("hello there").changes).toEqual({});
+  });
+
+  it("'what' does not trigger a hat", () => {
+    expect(ruleBasedResponse("what color is she?").changes.chapeau).toBeUndefined();
+  });
+});

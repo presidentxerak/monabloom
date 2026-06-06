@@ -1,225 +1,160 @@
 // Rule-based Gardener — used when ANTHROPIC_API_KEY is absent or the LLM fails.
-// Parses English keywords from the user message and produces poetic replies
-// with genome deltas, so the flower always responds without an LLM.
+// Maps English commands to exact genome deltas so the flower changes precisely
+// to match what the player asked. Unrecognised input changes nothing.
 
 import type { Delta } from "./genome";
 import type { Humeur, Hat, Glasses, Shoes } from "./genome";
 
-// ── Accessory + shape keywords ──────────────────────────────────────────────
-
-const HAT_WORDS: [RegExp, Hat][] = [
-  [/no hat|remove (the )?hat|bare ?head/i, "none"],
-  [/party|birthday|cone hat/i, "party"],
-  [/top ?hat|gentleman/i, "tophat"],
-  [/crown|king|queen|royal/i, "crown"],
-  [/beret|french hat|artist/i, "beret"],
-  [/\bcap\b|baseball|hat/i, "cap"],
-];
-const GLASSES_WORDS: [RegExp, Glasses][] = [
-  [/no glasses|remove (the )?glasses/i, "none"],
-  [/thug ?life|pixel/i, "thug"],
-  [/heart glasses|love glasses/i, "heart"],
-  [/round glasses|nerd|harry/i, "round"],
-  [/star glasses|star shades/i, "star"],
-  [/sunglasses|shades|sun glasses|cool/i, "sun"],
-];
-const SHOE_WORDS: [RegExp, Shoes][] = [
-  [/boots?/i, "boot"],
-  [/sandals?|flip ?flop/i, "sandal"],
-  [/platform/i, "platform"],
-  [/red (high|shoes|sneakers)|high ?tops?/i, "redhi"],
-  [/classic shoes|dress shoes|loafer/i, "classic"],
-  [/sneakers?|trainers?|kicks/i, "sneaker"],
-];
-const SHAPE_WORDS: [RegExp, number][] = [
-  [/round petal|blob petal|bubble petal/i, 1],
-  [/diamond|crystal petal|faceted/i, 2],
-  [/tube|capsule|cylinder petal/i, 3],
-  [/pointed|spiky|spike|teardrop|star petal/i, 4],
-  [/ring petal|donut petal|loop petal/i, 5],
-  [/bead petal|pearl petal/i, 6],
-  [/oval petal|classic petal|simple petal/i, 0],
-];
-
-// ── Colour keyword → hex ────────────────────────────────────────────────────
+// ── Colours (specific combos first, word-bounded) ───────────────────────────
 
 const COLOR_WORDS: [RegExp, string, "a" | "b" | "both"][] = [
-  [/\bred\b|crimson|scarlet/i, "#ff2244", "a"],
-  [/hot\s*pink|magenta|fuchsia/i, "#ff00cc", "a"],
-  [/\bpink\b|rose/i, "#ff88cc", "a"],
-  [/purple|violet|indigo/i, "#9933ff", "both"],
-  [/sky\s*blue|light\s*blue/i, "#44aaff", "b"],
-  [/navy|deep\s*blue|midnight/i, "#001eff", "b"],
-  [/\bblue\b/i, "#2244ff", "b"],
-  [/cyan|turquoise|teal|aqua/i, "#00ffee", "a"],
-  [/lime/i, "#aaff00", "a"],
-  [/forest|dark\s*green/i, "#008800", "a"],
-  [/\bgreen\b/i, "#22ff88", "a"],
-  [/gold|golden/i, "#ffcc00", "a"],
-  [/\byellow\b/i, "#ffee00", "a"],
-  [/orange|amber/i, "#ff8800", "a"],
-  [/white|bright|light/i, "#ffffff", "both"],
-  [/black|dark|night/i, "#111133", "both"],
-  [/silver/i, "#ccccff", "b"],
-  [/rainbow/i, "#ff4488", "a"],
+  [/dark red|blood red|maroon/i, "#aa1133", "a"],
+  [/\bred\b|crimson|scarlet|cherry/i, "#ff2244", "a"],
+  [/hot ?pink|magenta|fuchsia/i, "#ff14b0", "a"],
+  [/\bpink\b|rose|blush/i, "#ff88cc", "a"],
+  [/purple|violet|lavender/i, "#9933ff", "both"],
+  [/indigo/i, "#5b3bff", "b"],
+  [/sky ?blue|light ?blue|baby ?blue/i, "#5bb8ff", "b"],
+  [/navy|dark ?blue|midnight|deep ?blue/i, "#13228f", "b"],
+  [/\bblue\b|azure|cobalt/i, "#2a55ff", "b"],
+  [/cyan|turquoise|teal|aqua/i, "#00e5d0", "a"],
+  [/\blime\b/i, "#9be000", "a"],
+  [/dark ?green|forest|emerald/i, "#0a8a2e", "a"],
+  [/\bgreen\b|\bmint\b/i, "#22cc77", "a"],
+  [/gold|golden|amber/i, "#ffc02e", "a"],
+  [/\byellow\b|lemon|sunny/i, "#ffe000", "a"],
+  [/orange|tangerine|peach/i, "#ff8a00", "a"],
+  [/\bwhite\b|snow|ivory/i, "#f4eeff", "both"],
+  [/\bblack\b|onyx/i, "#1a1430", "both"],
+  [/silver|\bgrey\b|\bgray\b/i, "#b9c0d6", "b"],
 ];
 
-// ── Mood keyword → internal mood id ─────────────────────────────────────────
+const RAINBOW = /rainbow|colou?rful|multicolou?r/i;
+const CHANGE_COLOR = /(change|new|different|random|surprise|switch).{0,12}(colou?r|hue|shade)|(colou?r|hue|shade).{0,12}(change|swap)/i;
+
+// ── Moods ────────────────────────────────────────────────────────────────────
 
 const MOOD_WORDS: [RegExp, Humeur][] = [
-  [/happy|joyful|cheerful|glad|merry/i, "joyeuse"],
-  [/sad|melancholy|blue|gloomy|cry/i, "melancolique"],
-  [/calm|serene|peaceful|quiet|still/i, "sereine"],
-  [/playful|mischievous|cheeky|silly|fun/i, "espiegle"],
-  [/dream|dreamy|soft|gentle|tender/i, "reveuse"],
+  [/happy|joyful|cheerful|glad|merry|excited/i, "joyeuse"],
+  [/sad|melancholy|gloomy|cry|blue mood|down|lonely/i, "melancolique"],
+  [/calm|serene|peaceful|quiet|still|zen|relax/i, "sereine"],
+  [/playful|mischievous|cheeky|silly|fun|naughty/i, "espiegle"],
+  [/dream|dreamy|soft|gentle|tender|sleepy/i, "reveuse"],
 ];
 
-// ── Reply banks ─────────────────────────────────────────────────────────────
+// ── Accessories (word-bounded so "what" can't match "hat") ───────────────────
 
-const REPLIES_COLOR = [
-  "The hue spreads through her veins… like a dawn unfolding.",
+const HAT_WORDS: [RegExp, Hat][] = [
+  [/no hat|remove (the )?hat|take off (the )?hat|bare ?head/i, "none"],
+  [/party hat|birthday|cone hat/i, "party"],
+  [/top ?hat|gentleman|fancy hat/i, "tophat"],
+  [/crown|king|queen|royal|tiara/i, "crown"],
+  [/beret|french hat|artist hat/i, "beret"],
+  [/\bcap\b|baseball cap|\bhat\b/i, "cap"],
+];
+const GLASSES_WORDS: [RegExp, Glasses][] = [
+  [/no glasses|remove (the )?glasses|take off (the )?glasses/i, "none"],
+  [/thug ?life|pixel glasses/i, "thug"],
+  [/heart glasses|love glasses/i, "heart"],
+  [/round glasses|nerd glasses/i, "round"],
+  [/star glasses|star shades/i, "star"],
+  [/sunglasses|\bshades\b|sun glasses/i, "sun"],
+];
+const SHOE_WORDS: [RegExp, Shoes][] = [
+  [/\bboots?\b/i, "boot"],
+  [/sandals?|flip ?flops?/i, "sandal"],
+  [/platforms?/i, "platform"],
+  [/red (high|shoes|sneakers)|high ?tops?/i, "redhi"],
+  [/classic shoes|dress shoes|loafers?/i, "classic"],
+  [/sneakers?|trainers?|kicks|shoes/i, "sneaker"],
+];
+const SHAPE_WORDS: [RegExp, number][] = [
+  [/round petals?|blob petals?|bubble petals?/i, 1],
+  [/diamond petals?|crystal petals?|faceted/i, 2],
+  [/tube petals?|capsule petals?|cylinder petals?/i, 3],
+  [/pointed|spiky|spike|teardrop|star petals?|sharp petals?/i, 4],
+  [/ring petals?|donut petals?|loop petals?/i, 5],
+  [/bead petals?|pearl petals?/i, 6],
+  [/oval petals?|classic petals?|simple petals?/i, 0],
+];
+
+// ── Reply banks ──────────────────────────────────────────────────────────────
+
+const R_COLOR = [
+  "The hue spreads through her veins, like a dawn unfolding.",
   "I dye her petals with this new light.",
-  "The pigments wake. She drinks this colour like a spring.",
-  "Her skin shifts, slowly… soaking in this flood of light.",
-  "A cloud of colour wraps around her, and she becomes it.",
+  "Her colours shift, soaking in this new shade.",
+];
+const R_PETALS_MORE = ["New petals sprout, reaching for the light.", "She blooms fuller, each arm a fresh breath."];
+const R_PETALS_LESS = ["She draws inward, simpler and deeper.", "Fewer petals, but each one truer."];
+const R_MOOD = ["Her soul shifts — I feel her vibrate differently.", "A new emotion blooms within her."];
+const R_DRESS = ["She tries it on, delighted with her new look.", "A little style suits her perfectly.", "Dressed up and glowing, she twirls for you."];
+const R_SHAPE = ["Her petals reshape themselves, fluid as wax.", "A new silhouette unfolds, petal by petal."];
+const R_NONE = [
+  "Tell me a colour, a mood, a hat, glasses, shoes, or a petal shape — and I'll make it so.",
+  "I'm listening. Try \"make her blue\", \"give her sunglasses\", or \"pointed petals\".",
+  "Whisper a wish — a colour, an emotion, an accessory — and she'll answer.",
 ];
 
-const REPLIES_PETALS_MORE = [
-  "New petals sprout, reaching for the light.",
-  "She blooms further, each arm a fresh breath.",
-  "The flower grows more intricate, a living fractal.",
-  "Her little arms stretch toward the infinite.",
-];
-
-const REPLIES_PETALS_LESS = [
-  "She draws inward, the better to hold her inner light.",
-  "Fewer petals, but each one deeper.",
-  "The flower simplifies, pure as a haiku.",
-  "She folds into herself, concentrating her essence.",
-];
-
-const REPLIES_MOOD = [
-  "Her soul shifts… I feel her vibrate differently.",
-  "The mood moves like a silent tide.",
-  "She feels what you feel. Her dance follows your heart.",
-  "A new emotion blooms within her.",
-];
-
-const REPLIES_GENERIC = [
-  "I'm listening… and she answers your voice.",
-  "Her shape trembles. Tell me more of what you feel.",
-  "The garden murmurs. The flower leans toward your words.",
-  "I sense something beautiful in your words.",
-  "She grows, in her own way, at her own quiet pace.",
-  "Every word you speak is a drop of dew for her.",
-];
-
-const REPLIES_DRESS = [
-  "She tries it on, delighted with her new look.",
-  "A little style suits her perfectly.",
-  "Dressed up and glowing — she twirls for you.",
-  "Her new accessory catches the light.",
-];
-
-const REPLIES_SHAPE = [
-  "Her petals reshape themselves, fluid as wax.",
-  "A new silhouette unfolds, petal by petal.",
-  "She rearranges her form to please you.",
-];
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-function pick<T>(arr: T[], n: number): T {
-  return arr[Math.abs(n) % arr.length];
-}
-
+function pick<T>(arr: T[], n: number): T { return arr[Math.abs(n) % arr.length]; }
 function msgSeed(msg: string): number {
   let h = 2166136261;
-  for (let i = 0; i < msg.length; i++) {
-    h ^= msg.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
-  }
+  for (let i = 0; i < msg.length; i++) { h ^= msg.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return h;
 }
 
-// ── Main export ──────────────────────────────────────────────────────────────
+const RANDOM_PAIRS: [string, string][] = [
+  ["#ff6ec7", "#7a5cff"], ["#00e5d0", "#ff5b9a"], ["#ffd000", "#ff5400"],
+  ["#7bd1ff", "#b06bff"], ["#ff3aa0", "#3ad0ff"], ["#9be000", "#ff2e88"],
+];
 
-export function ruleBasedResponse(
-  message: string,
-): { reply: string; changes: Delta } {
+// ── Main ─────────────────────────────────────────────────────────────────────
+
+export function ruleBasedResponse(message: string): { reply: string; changes: Delta } {
   const changes: Delta = {};
   const seed = msgSeed(message);
-  let replyPool = REPLIES_GENERIC;
+  let reply = R_NONE;
   let matched = false;
+  // priority of the reply line: accessory/shape > petals > mood > colour
+  let priority = 0;
+  const bump = (pool: string[], pr: number) => { if (pr >= priority) { priority = pr; reply = pool; } matched = true; };
 
-  // Colour detection.
-  for (const [re, hex, target] of COLOR_WORDS) {
-    if (re.test(message)) {
-      if (target === "a" || target === "both") changes.couleurA = hex;
-      if (target === "b" || target === "both") changes.couleurB = hex;
-      replyPool = REPLIES_COLOR;
-      matched = true;
-      break;
-    }
-  }
-
-  // Petal-count detection.
-  const morePetals = /more petal|add petal|bigger|grow|fuller/i.test(message);
-  const lessPetals = /less petal|fewer petal|remove petal|simpler|reduce|smaller/i.test(message);
-
-  if (morePetals) {
-    changes.petales = "+2";
-    replyPool = REPLIES_PETALS_MORE;
-    matched = true;
-  } else if (lessPetals) {
-    changes.petales = "-2";
-    replyPool = REPLIES_PETALS_LESS;
-    matched = true;
+  // Colour
+  if (RAINBOW.test(message)) {
+    changes.couleurA = "#ff3aa0"; changes.couleurB = "#3ad0ff"; bump(R_COLOR, 1);
   } else {
-    const numMatch = message.match(/\b([3-9]|1[0-2])\s*petal/i);
-    if (numMatch) {
-      changes.petales = parseInt(numMatch[1], 10);
-      replyPool = REPLIES_PETALS_MORE;
-      matched = true;
+    let hit = false;
+    for (const [re, hex, target] of COLOR_WORDS) {
+      if (re.test(message)) {
+        if (target === "a" || target === "both") changes.couleurA = hex;
+        if (target === "b" || target === "both") changes.couleurB = hex;
+        bump(R_COLOR, 1); hit = true; break;
+      }
+    }
+    if (!hit && CHANGE_COLOR.test(message)) {
+      const [a, b] = RANDOM_PAIRS[seed % RANDOM_PAIRS.length];
+      changes.couleurA = a; changes.couleurB = b; bump(R_COLOR, 1);
     }
   }
 
-  // Mood detection.
-  for (const [re, humeur] of MOOD_WORDS) {
-    if (re.test(message)) {
-      changes.humeur = humeur;
-      replyPool = REPLIES_MOOD;
-      matched = true;
-      break;
-    }
+  // Petals
+  if (/more petals?|add petals?|fuller|bigger flower|bushier/i.test(message)) { changes.petales = "+2"; bump(R_PETALS_MORE, 2); }
+  else if (/less petals?|fewer petals?|remove petals?|simpler|smaller flower|minimal/i.test(message)) { changes.petales = "-2"; bump(R_PETALS_LESS, 2); }
+  else {
+    const num = message.match(/\b([3-9]|1[0-2])\s*petals?\b/i);
+    if (num) { changes.petales = parseInt(num[1], 10); bump(R_PETALS_MORE, 2); }
   }
 
-  // Accessories — hats / glasses / shoes.
-  for (const [re, hat] of HAT_WORDS) {
-    if (re.test(message)) { changes.chapeau = hat; replyPool = REPLIES_DRESS; matched = true; break; }
-  }
-  for (const [re, glasses] of GLASSES_WORDS) {
-    if (re.test(message)) { changes.lunettes = glasses; replyPool = REPLIES_DRESS; matched = true; break; }
-  }
-  for (const [re, shoes] of SHOE_WORDS) {
-    if (re.test(message)) { changes.chaussures = shoes; replyPool = REPLIES_DRESS; matched = true; break; }
-  }
+  // Mood
+  for (const [re, humeur] of MOOD_WORDS) { if (re.test(message)) { changes.humeur = humeur; bump(R_MOOD, 3); break; } }
 
-  // Petal shape.
-  for (const [re, forme] of SHAPE_WORDS) {
-    if (re.test(message)) { changes.forme = forme; replyPool = REPLIES_SHAPE; matched = true; break; }
-  }
+  // Accessories
+  for (const [re, hat] of HAT_WORDS) { if (re.test(message)) { changes.chapeau = hat; bump(R_DRESS, 4); break; } }
+  for (const [re, gl] of GLASSES_WORDS) { if (re.test(message)) { changes.lunettes = gl; bump(R_DRESS, 4); break; } }
+  for (const [re, sh] of SHOE_WORDS) { if (re.test(message)) { changes.chaussures = sh; bump(R_DRESS, 4); break; } }
 
-  // Nothing matched → a small random colour nudge so the flower still reacts.
-  if (!matched) {
-    const hues = [
-      "#ff6ec7", "#7a5cff", "#00ff88", "#ffdd00", "#00ffee",
-      "#ff8800", "#ff3399", "#33ccff", "#ff0066", "#88ff00",
-    ];
-    const idx = seed % hues.length;
-    changes.couleurA = hues[idx];
-    changes.couleurB = hues[(idx + 5) % hues.length];
-  }
+  // Petal shape
+  for (const [re, forme] of SHAPE_WORDS) { if (re.test(message)) { changes.forme = forme; bump(R_SHAPE, 4); break; } }
 
-  return { reply: pick(replyPool, seed), changes };
+  return { reply: pick(reply, seed), changes: matched ? changes : {} };
 }

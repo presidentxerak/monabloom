@@ -14,6 +14,7 @@ import {
   type FlowerListing,
 } from "@/lib/collection";
 import { computeRarity } from "@/lib/rarity";
+import { tokenLabel, rank } from "@/lib/identity";
 import { croiser } from "@/lib/actions";
 import type { Genome } from "@/lib/genome";
 import { getSoundEngine } from "@/lib/sound";
@@ -109,7 +110,13 @@ function FlowerCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <p className="truncate text-sm font-medium text-zinc-800">{item.name}</p>
+        <div>
+          <p className="truncate text-sm font-medium text-zinc-800">
+            {item.name}{" "}
+            <span className="font-mono text-[10px] text-zinc-400">{tokenLabel(item.genome.seedHash)}</span>
+          </p>
+          <p className="text-[10px] text-zinc-400">Rank #{rank(item.genome)}</p>
+        </div>
         <div className="flex items-center justify-between gap-1">
           <PriceTag price={item.price} />
           <span className="truncate text-[10px] text-zinc-400">

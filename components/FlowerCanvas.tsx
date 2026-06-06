@@ -47,10 +47,6 @@ interface PetalVar { len: number; wid: number; hueShift: number; tilt: number; }
 interface Projectile { action: FeedSignal["action"]; t: number; }
 interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; col: RGB; }
 
-const FEED_COLOR: Record<FeedSignal["action"], RGB> = {
-  eau: [90, 175, 255], engrais: [150, 110, 70], soleil: [255, 205, 70], pouvoir: [235, 90, 220],
-};
-
 function computeRig(dance: number, t: number) {
   let bobY = Math.sin(t * 1.6) * 0.05;
   let spin = 0, twist = 0, headTilt = Math.sin(t * 1.6) * 0.04, sway = 0;
@@ -210,6 +206,32 @@ export default function FlowerCanvas({
           for (const [mx, my, mr] of mouth) { p.push(); p.translate(mx, my, surfZ(R, mx, my, R * 0.01)); setMat(dark, 15, 6); p.sphere(mr, 10, 8); p.pop(); }
         };
 
+        // A real themed 3D object per feed action, drawn centred at the origin.
+        const drawFeedObject = (action: FeedSignal["action"], R: number) => {
+          if (action === "eau") { // water droplet
+            setMat([95, 180, 255], 200, 60);
+            p.push(); p.translate(0, R * 0.05, 0); p.sphere(R * 0.12, 16, 12); p.pop();
+            p.push(); p.translate(0, -R * 0.14, 0); p.cone(R * 0.1, R * 0.2, 16, 1, true); p.pop();
+          } else if (action === "engrais") { // burger
+            setMat([238, 172, 92]); p.push(); p.translate(0, -R * 0.12, 0); p.scale(1, 0.66, 1); p.sphere(R * 0.18, 18, 14); p.pop();
+            setMat([255, 240, 130]); p.push(); p.translate(0, -R * 0.12, R * 0.1); p.sphere(R * 0.02, 8, 6); p.pop();
+            setMat([110, 200, 95]); p.push(); p.translate(0, -R * 0.02, 0); p.cylinder(R * 0.19, R * 0.04, 18, 1); p.pop();
+            setMat([122, 70, 42]); p.push(); p.translate(0, R * 0.05, 0); p.cylinder(R * 0.16, R * 0.08, 18, 1); p.pop();
+            setMat([228, 160, 84]); p.push(); p.translate(0, R * 0.14, 0); p.cylinder(R * 0.16, R * 0.07, 18, 1); p.pop();
+          } else if (action === "soleil") { // sun
+            setMat([255, 208, 72], 200, 50); p.sphere(R * 0.13, 18, 14);
+            setMat([255, 180, 40]);
+            for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; p.push(); p.translate(Math.cos(a) * R * 0.2, Math.sin(a) * R * 0.2, 0); p.rotateZ(a - Math.PI / 2); p.cone(R * 0.04, R * 0.12, 8, 1, true); p.pop(); }
+          } else { // power star
+            setMat([255, 80, 220], 200, 60);
+            p.push(); p.box(R * 0.36, R * 0.09, R * 0.07); p.pop();
+            p.push(); p.box(R * 0.09, R * 0.36, R * 0.07); p.pop();
+            setMat([255, 224, 96]);
+            p.push(); p.rotateZ(Math.PI / 4); p.box(R * 0.26, R * 0.07, R * 0.06); p.pop();
+            p.push(); p.rotateZ(Math.PI / 4); p.box(R * 0.07, R * 0.26, R * 0.06); p.pop();
+          }
+        };
+
         p.draw = () => {
           const g = genomeRef.current;
           if (g.seedHash !== lastSeed) { lastSeed = g.seedHash; rebuild(g.seedHash); }
@@ -315,9 +337,12 @@ export default function FlowerCanvas({
             const pr = projectiles[i]; pr.t += 0.025;
             if (pr.t >= 1) { projectiles.splice(i, 1); gulp = 1; continue; }
             const e = pr.t * (2 - pr.t);
-            p.push(); p.translate(start[0] + (mouth[0] - start[0]) * e, start[1] + (mouth[1] - start[1]) * e, start[2] + (mouth[2] - start[2]) * e);
-            setMat(FEED_COLOR[pr.action], 140, 30);
-            if (pr.action === "eau") p.ellipsoid(R * 0.1, R * 0.14, R * 0.1, 12, 10); else p.sphere(R * 0.12, 14, 12);
+            p.push();
+            p.translate(start[0] + (mouth[0] - start[0]) * e, start[1] + (mouth[1] - start[1]) * e, start[2] + (mouth[2] - start[2]) * e);
+            p.rotateY(pr.t * 4); p.rotateZ(pr.t * 2);
+            const grow = 0.7 + 0.3 * e;
+            p.scale(grow);
+            drawFeedObject(pr.action, R);
             p.pop();
           }
 

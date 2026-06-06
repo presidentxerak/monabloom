@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Chat from "@/components/Chat";
 import FlowerCanvas from "@/components/FlowerCanvas";
 import type { FeedSignal, PowerSignal } from "@/components/FlowerCanvas";
 import SoundEngine from "@/components/SoundEngine";
-import FeedBar from "@/components/FeedBar";
+import FeedBar, { type WardrobeTab } from "@/components/FeedBar";
 import Wardrobe from "@/components/Wardrobe";
 import MusicPlayer from "@/components/MusicPlayer";
 import { GenomeSchema, genomeDefaut, type Genome } from "@/lib/genome";
 import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
 import { addOwnedGenome } from "@/lib/collection";
 import { DANCES } from "@/lib/cosmetics";
+import { computeRarity } from "@/lib/rarity";
+import { tokenLabel, rank } from "@/lib/identity";
+import { nomPoetique } from "@/lib/flower-random";
 import { hexToRgb } from "@/lib/flower-engine";
 import { getSoundEngine } from "@/lib/sound";
 
@@ -27,7 +30,7 @@ export default function Home() {
   const [feedSignal, setFeedSignal] = useState<FeedSignal | null>(null);
   const [powerSignal, setPowerSignal] = useState<PowerSignal | null>(null);
   const [dance, setDance] = useState(0);
-  const [wardrobe, setWardrobe] = useState(false);
+  const [wardrobe, setWardrobe] = useState<WardrobeTab | null>(null);
   const [music, setMusic] = useState(false);
 
   useEffect(() => {
@@ -50,6 +53,17 @@ export default function Home() {
     root.style.setProperty("--bg-pastel", pastel(genome.couleurB));
   }, [genome.couleurA, genome.couleurB]);
 
+  const identity = useMemo(() => {
+    const rarity = computeRarity(genome);
+    return {
+      name: nomPoetique(genome.seedHash),
+      token: tokenLabel(genome.seedHash),
+      tier: rarity.tier,
+      color: rarity.color,
+      rank: rank(genome),
+    };
+  }, [genome]);
+
   function note(msg: string, ms = 2600) {
     setFeedNote(msg);
     setTimeout(() => setFeedNote(null), ms);
@@ -69,7 +83,7 @@ export default function Home() {
     setPowerSignal({ id: Date.now() });
     setGenome((g) => feedFlower(g, "pouvoir"));
     getSoundEngine().playSparkle();
-    note("✦ A burst of power!");
+    note("A burst of power!");
   }
 
   function handleDance() {
@@ -81,7 +95,7 @@ export default function Home() {
   function handleSave() {
     const flower = addOwnedGenome(genome);
     getSoundEngine().playSell();
-    note(`Saved "${flower.name}" to The Garden — list it to sell!`, 3200);
+    note(`Saved "${flower.name}" ${identity.token} to The Garden!`, 3200);
   }
 
   return (
@@ -96,6 +110,18 @@ export default function Home() {
             The Garden
           </Link>
         </header>
+
+        {/* Identity card */}
+        <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 text-center">
+          <div className="glass inline-flex flex-col items-center rounded-2xl px-4 py-1.5">
+            <span className="font-display text-sm tracking-wide text-zinc-800">
+              {identity.name} <span className="text-zinc-400">{identity.token}</span>
+            </span>
+            <span className="text-[10px] uppercase tracking-wider" style={{ color: identity.color }}>
+              {identity.tier} · Rank #{identity.rank}
+            </span>
+          </div>
+        </div>
 
         <div className="absolute right-3 top-3 z-10">
           <SoundEngine genome={genome} />
@@ -116,9 +142,9 @@ export default function Home() {
               onFeed={handleFeed}
               onPower={handlePower}
               onDance={handleDance}
-              onDress={() => setWardrobe(true)}
               onMusic={() => setMusic(true)}
               onSave={handleSave}
+              onWardrobe={(tab) => setWardrobe(tab)}
             />
           </div>
         </div>
@@ -132,8 +158,9 @@ export default function Home() {
       {wardrobe && (
         <Wardrobe
           genome={genome}
+          initialTab={wardrobe}
           onChange={(patch) => setGenome((g) => ({ ...g, ...patch }))}
-          onClose={() => setWardrobe(false)}
+          onClose={() => setWardrobe(null)}
         />
       )}
       {music && <MusicPlayer onClose={() => setMusic(false)} />}
