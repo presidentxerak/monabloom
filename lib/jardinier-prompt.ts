@@ -22,6 +22,8 @@ Allowed deltas (all optional):
 - "lunettes" (glasses): one of "none","sun","thug","heart","round","star"
 - "chaussures" (shoes): one of "sneaker","boot","sandal","platform","classic","redhi"
 - "forme" (petal shape): an integer 0..6 (0 oval, 1 round, 2 diamond, 3 tube, 4 pointed, 5 ring, 6 beads)
+- "vitesse" (petal spin speed): number 0.2..3 (1 = normal; higher = faster, lower = slower; "accelerate/spin faster" -> ~2.5, "slow down" -> ~0.5, "stop spinning" -> ~0.15)
+- "taille" (overall size): number 0.6..1.5 (1 = normal; "bigger/giant" -> ~1.4, "smaller/tiny" -> ~0.7)
 
 Rules:
 - Translate the player's emotions into mood and colours; words of quantity or

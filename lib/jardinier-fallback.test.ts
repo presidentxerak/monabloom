@@ -48,8 +48,21 @@ describe("ruleBasedResponse — commands map to exact changes", () => {
     expect(ruleBasedResponse("make her smile").changes.humeur).toBe("joyeuse");
     expect(ruleBasedResponse("she looks gloomy").changes.humeur).toBe("melancolique");
     expect(ruleBasedResponse("chill vibes").changes.humeur).toBe("sereine");
-    expect(ruleBasedResponse("grow the flower").changes.petales).toBe("+2");
-    expect(ruleBasedResponse("make it smaller").changes.petales).toBe("-2");
+    expect(ruleBasedResponse("add more petals").changes.petales).toBe("+2");
+  });
+
+  it("controls spin speed and size", () => {
+    expect(ruleBasedResponse("spin faster").changes.vitesse).toBeGreaterThan(1);
+    expect(ruleBasedResponse("accelerate petals rotation").changes.vitesse).toBeGreaterThan(1);
+    expect(ruleBasedResponse("slow down the spin").changes.vitesse).toBeLessThan(1);
+    expect(ruleBasedResponse("make her huge").changes.taille).toBeGreaterThan(1);
+    expect(ruleBasedResponse("make it tiny").changes.taille).toBeLessThan(1);
+  });
+
+  it("flags confident matches vs guesses", () => {
+    expect(ruleBasedResponse("make her blue").confident).toBe(true);
+    expect(ruleBasedResponse("change petals").confident).toBe(false);
+    expect(ruleBasedResponse("hello").confident).toBe(false);
   });
 
   it("vague 'change <target>' commands always do something", () => {

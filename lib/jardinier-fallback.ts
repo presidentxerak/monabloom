@@ -117,7 +117,12 @@ function prand<T>(a: readonly T[]): T { return a[ri(a.length)]; }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-export function ruleBasedResponse(message: string): { reply: string; changes: Delta } {
+const R_SPIN = ["Her petals whirl to a new rhythm.", "The spin shifts, hypnotic.", "Round and round, at a fresh pace."];
+const R_SIZE = ["She changes stature before your eyes.", "Her whole form re-scales.", "Bigger or smaller — she obliges."];
+
+export function ruleBasedResponse(
+  message: string,
+): { reply: string; changes: Delta; confident: boolean } {
   const changes: Delta = {};
   const seed = msgSeed(message);
   let reply = R_NONE;
@@ -144,13 +149,24 @@ export function ruleBasedResponse(message: string): { reply: string; changes: De
     }
   }
 
-  // Petals
-  if (/more petals?|add petals?|fuller|bigger|grow|expand|bushier|lush|huge/i.test(message)) { changes.petales = "+2"; bump(R_PETALS_MORE, 2); }
-  else if (/less petals?|fewer petals?|remove petals?|simpler|smaller|shrink|reduce|tiny|minimal/i.test(message)) { changes.petales = "-2"; bump(R_PETALS_LESS, 2); }
+  // Petals (count only — size words go to "taille" below)
+  if (/more petals?|add petals?|extra petals?|fuller|bushier|lush/i.test(message)) { changes.petales = "+2"; bump(R_PETALS_MORE, 2); }
+  else if (/less petals?|fewer petals?|remove petals?|sparse/i.test(message)) { changes.petales = "-2"; bump(R_PETALS_LESS, 2); }
   else {
     const num = message.match(/\b([3-9]|1[0-2])\s*petals?\b/i);
     if (num) { changes.petales = parseInt(num[1], 10); bump(R_PETALS_MORE, 2); }
   }
+
+  // Petal spin speed
+  if (/stop (spin|spinning|rotat|moving|turning)|hold still|freeze|stand still/i.test(message)) { changes.vitesse = 0.12; bump(R_SPIN, 4); }
+  else if (/slow(er|\b| down| it| the spin| rotation)|gentle spin|less spin/i.test(message)) { changes.vitesse = 0.45; bump(R_SPIN, 4); }
+  else if (/faster|accelerate|speed up|spin faster|quicker|whirl|spin more|hyper/i.test(message)) { changes.vitesse = 2.6; bump(R_SPIN, 4); }
+
+  // Overall size
+  if (/giant|huge|enormous|massive|colossal/i.test(message)) { changes.taille = 1.5; bump(R_SIZE, 4); }
+  else if (/bigger|larger|enlarge|grow|scale up|grand/i.test(message)) { changes.taille = 1.3; bump(R_SIZE, 4); }
+  else if (/tiny|miniature|teeny|itsy/i.test(message)) { changes.taille = 0.62; bump(R_SIZE, 4); }
+  else if (/smaller|shrink|tinier|scale down|petite/i.test(message)) { changes.taille = 0.78; bump(R_SIZE, 4); }
 
   // Mood
   for (const [re, humeur] of MOOD_WORDS) { if (re.test(message)) { changes.humeur = humeur; bump(R_MOOD, 3); break; } }
@@ -162,6 +178,10 @@ export function ruleBasedResponse(message: string): { reply: string; changes: De
 
   // Petal shape
   for (const [re, forme] of SHAPE_WORDS) { if (re.test(message)) { changes.forme = forme; bump(R_SHAPE, 4); break; } }
+
+  // Everything above is a confident, specific match. The intent layer below is
+  // a best-guess (random) and should NOT override a smarter LLM.
+  const confident = matched;
 
   // Intent layer — "change/new/different/randomize <target>" gives a fresh value
   // for that target. Runs only when no specific value was named above.
@@ -181,5 +201,5 @@ export function ruleBasedResponse(message: string): { reply: string; changes: De
     }
   }
 
-  return { reply: pick(reply, seed), changes: matched ? changes : {} };
+  return { reply: pick(reply, seed), changes: matched ? changes : {}, confident };
 }

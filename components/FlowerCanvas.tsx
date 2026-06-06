@@ -317,7 +317,7 @@ export default function FlowerCanvas({
           petalesShown += (g.petales - petalesShown) * 0.06;
 
           const meta = HUMEUR_META[g.humeur];
-          petalSpin += 0.003 * meta.pulse;
+          petalSpin += 0.003 * meta.pulse * (g.vitesse ?? 1);
           danceT += 0.03;
           gulp *= 0.88;
 
@@ -342,6 +342,7 @@ export default function FlowerCanvas({
 
           p.noStroke();
           p.push();
+          p.scale(g.taille ?? 1);
           p.rotateX(0.1);
           p.translate(rig.sway * R, -R * 0.95 + rig.bobY * R, 0);
           p.rotateY(rig.spin + rig.twist);

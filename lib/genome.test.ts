@@ -97,7 +97,7 @@ describe("applyDelta — empty delta", () => {
 
 describe("DeltaSchema validation", () => {
   it("rejects unknown keys", () => {
-    expect(DeltaSchema.safeParse({ taille: 5 }).success).toBe(false);
+    expect(DeltaSchema.safeParse({ wingspan: 5 }).success).toBe(false);
   });
   it("rejects invalid hex", () => {
     expect(DeltaSchema.safeParse({ couleurA: "#xyz" }).success).toBe(false);

@@ -37,6 +37,8 @@ export interface Genome {
   lunettes?: Glasses;
   chaussures?: Shoes;
   forme?: number; // 0..6 petal-shape override (else derived from the seed)
+  vitesse?: number; // petal spin speed, 0.2..3 (1 = normal)
+  taille?: number; // overall size, 0.6..1.5 (1 = normal)
 }
 
 export const PETALES_MIN = 3;
@@ -52,6 +54,8 @@ export const GENOME_DEFAUT: Omit<Genome, "bloc" | "seedHash"> = {
   chapeau: "none",
   lunettes: "none",
   chaussures: "sneaker",
+  vitesse: 1,
+  taille: 1,
 };
 
 // A fixed, non-zero "garden seed" so the very first render already has organic
@@ -84,6 +88,8 @@ export const GenomeSchema = z
     lunettes: z.enum(GLASSES).optional(),
     chaussures: z.enum(SHOES).optional(),
     forme: z.number().int().min(0).max(6).optional(),
+    vitesse: z.number().min(0).max(3).optional(),
+    taille: z.number().min(0.4).max(1.8).optional(),
   })
   .strict();
 
@@ -107,6 +113,8 @@ export const DeltaSchema = z
     lunettes: z.enum(GLASSES).optional(),
     chaussures: z.enum(SHOES).optional(),
     forme: z.number().int().min(0).max(6).optional(),
+    vitesse: z.number().optional(),
+    taille: z.number().optional(),
   })
   .strict();
 
@@ -181,6 +189,12 @@ export function applyDelta(genome: Genome, delta: Delta): Genome {
   }
   if (delta.forme !== undefined && Number.isFinite(delta.forme)) {
     next.forme = Math.max(0, Math.min(6, Math.round(delta.forme)));
+  }
+  if (delta.vitesse !== undefined && Number.isFinite(delta.vitesse)) {
+    next.vitesse = Math.max(0.1, Math.min(3, delta.vitesse));
+  }
+  if (delta.taille !== undefined && Number.isFinite(delta.taille)) {
+    next.taille = Math.max(0.5, Math.min(1.6, delta.taille));
   }
 
   return next;

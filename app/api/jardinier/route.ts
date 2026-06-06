@@ -3,6 +3,7 @@ import {
   GenomeSchema,
   applyDelta,
   genomeDefaut,
+  type Delta,
   type Genome,
 } from "@/lib/genome";
 import { buildSystemPrompt } from "@/lib/jardinier-prompt";
@@ -29,17 +30,6 @@ const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 const PLACEHOLDER_HASH = "0x" + "0".repeat(64);
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
-
-/**
- * Universal fallback: whenever the LLM is unavailable or returns something
- * unusable, fall back to the rule-based gardener so the flower ALWAYS reacts.
- * The flower must never feel "dead".
- */
-function fallbackResponse(genome: Genome, userMsg: string) {
-  const { reply, changes } = ruleBasedResponse(userMsg);
-  const nextGenome = applyDelta(genome, changes);
-  return NextResponse.json({ reply, changes, genome: nextGenome });
-}
 
 /** Ensure the genome carries a real on-chain seed before it matters. */
 async function ensureSeed(genome: Genome): Promise<Genome> {
@@ -121,21 +111,37 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Chat branch — LLM cascade (Anthropic → Cerebras → Groq → Gemini →
-  //    OpenRouter → Mistral), then the rule-based gardener as a safety net. ──
-  let result = null;
+  // ── Chat branch — HYBRID: rule-based (exact) + LLM cascade. ──
+  // Rules give precise, deterministic mappings for named commands; the LLM
+  // handles the long tail. We merge them so a command ALWAYS produces a change
+  // when the player clearly asked for one.
+  const rule = ruleBasedResponse(userMsg);
+
+  let llm = null;
   try {
-    result = await generateCascade(buildSystemPrompt(genome), history);
+    llm = await generateCascade(buildSystemPrompt(genome), history);
   } catch (err) {
     console.error("[jardinier] cascade error:", err);
   }
-  if (!result) return fallbackResponse(genome, userMsg);
 
-  // Apply the delta server-side — the server stays the authority.
-  const nextGenome = applyDelta(genome, result.changes);
-  return NextResponse.json({
-    reply: result.reply,
-    changes: result.changes,
-    genome: nextGenome,
-  });
+  let changes: Delta;
+  let reply: string;
+  if (llm) {
+    const llmHasChanges = Object.keys(llm.changes).length > 0;
+    if (llmHasChanges) {
+      // Trust the LLM, but let a CONFIDENT keyword match override for exactness
+      // (so "make her red" is always #ff2244, never the model's guess).
+      changes = rule.confident ? { ...llm.changes, ...rule.changes } : llm.changes;
+    } else {
+      // The LLM only chatted — apply whatever the rules caught so she reacts.
+      changes = rule.changes;
+    }
+    reply = llm.reply;
+  } else {
+    changes = rule.changes;
+    reply = rule.reply;
+  }
+
+  const nextGenome = applyDelta(genome, changes);
+  return NextResponse.json({ reply, changes, genome: nextGenome });
 }
