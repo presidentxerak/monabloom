@@ -11,10 +11,12 @@ function tint(c: RGB, t: number): RGB {
   return [c[0] + (255 - c[0]) * t, c[1] + (255 - c[1]) * t, c[2] + (255 - c[2]) * t];
 }
 
+interface Place { id: string; genome: Genome; sx: number; sy: number; R: number; gz: number; }
+
 /**
- * A scrollable 3D gallery of flower-characters. Each flower is anchored to a
- * known screen cell (so clicks are reliable), rendered with real 3D meshes that
- * gently turn and bob. Scroll to wander the garden, click a character to select.
+ * A 3D garden: a tilted ground plane staged with flower-characters that stand
+ * on it in perspective (smaller and higher toward the back). Click a flower to
+ * select it. Positions are anchored to known screen points so clicks are exact.
  */
 export default function BlitzGarden({
   flowers,
@@ -23,7 +25,7 @@ export default function BlitzGarden({
 }: {
   flowers: BlitzFlower[];
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  onSelect: (id: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const flowersRef = useRef(flowers); flowersRef.current = flowers;
@@ -40,105 +42,117 @@ export default function BlitzGarden({
       const container = containerRef.current;
       if (!mounted || !container) return;
 
-      let scrollY = 0;
       let t = 0;
+      let placements: Place[] = [];
 
       const sketch = (p: p5) => {
         const measure = () => ({ w: container.clientWidth || 800, h: container.clientHeight || 600 });
         p.setup = () => { const { w, h } = measure(); p.createCanvas(w, h, p.WEBGL); p.frameRate(60); p.smooth(); };
 
-        const layout = () => {
-          const w = p.width;
-          const cols = Math.max(2, Math.min(5, Math.floor(w / 230)));
-          const cell = w / cols;
-          const cellH = cell * 1.15;
-          const n = flowersRef.current.length;
-          const rows = Math.ceil(n / cols);
-          const totalH = rows * cellH + 80;
-          const maxScroll = Math.max(0, totalH - p.height);
-          return { cols, cell, cellH, rows, totalH, maxScroll };
-        };
-
-        const cellCenter = (i: number, L: ReturnType<typeof layout>) => {
-          const col = i % L.cols, row = Math.floor(i / L.cols);
-          const cx = (col + 0.5) * L.cell;
-          const cy = 70 + (row + 0.5) * L.cellH - scrollY;
-          return { cx, cy };
-        };
-
         const setMat = (c: RGB, spec = 60, shine = 12) => { p.fill(c[0], c[1], c[2]); p.ambientMaterial(c[0], c[1], c[2]); p.specularMaterial(spec); p.shininess(shine); };
         const surfZ = (R: number, x: number, y: number, out = 0) => Math.sqrt(Math.max(0, R * R - x * x - y * y)) + out;
 
-        const drawFlower = (g: Genome, R: number, ti: number, glow: boolean) => {
+        const computeLayout = (): Place[] => {
+          const w = p.width, h = p.height;
+          const list = flowersRef.current.slice(0, 24);
+          const n = list.length;
+          if (n === 0) return [];
+          const rows = Math.max(1, Math.min(5, Math.round(Math.sqrt(n * 1.2))));
+          const perRow = Math.ceil(n / rows);
+          const out: Place[] = [];
+          for (let i = 0; i < n; i++) {
+            const row = Math.floor(i / perRow);
+            const col = i % perRow;
+            const colCount = Math.min(perRow, n - row * perRow);
+            const gz = rows > 1 ? row / (rows - 1) : 0.5; // 0 far .. 1 near
+            const yBase = h * 0.34 + gz * (h * 0.46);
+            const R = h * (0.045 + gz * 0.06);
+            const spread = w * (0.28 + gz * 0.18);
+            const stagger = row % 2 ? spread / Math.max(1, colCount) * 0.5 : 0;
+            const x = colCount > 1 ? w / 2 + ((col / (colCount - 1)) - 0.5) * 2 * spread + stagger : w / 2 + stagger;
+            const jitter = Math.sin(i * 12.9) * h * 0.012;
+            out.push({ id: list[i].id, genome: list[i].genome, sx: x, sy: yBase + jitter, R, gz });
+          }
+          out.sort((a, b) => a.gz - b.gz); // far first
+          return out;
+        };
+
+        const drawGround = () => {
+          p.push();
+          p.translate(0, p.height * 0.30, -320);
+          p.rotateX(Math.PI / 2.5);
+          setMat([196, 224, 188], 20, 4);
+          p.plane(p.width * 2.8, 2400);
+          p.pop();
+          // a soft near strip
+          p.push();
+          p.translate(0, p.height * 0.42, -40);
+          p.rotateX(Math.PI / 2.5);
+          setMat([182, 214, 176], 20, 4);
+          p.plane(p.width * 2.2, 700);
+          p.pop();
+        };
+
+        const drawChar = (g: Genome, R: number, ti: number, glow: boolean) => {
           const a = hexToRgb(g.couleurA), b = hexToRgb(g.couleurB);
           const n = g.petales;
-          if (glow) { p.push(); p.translate(0, R * 2.4, 0); p.rotateX(Math.PI / 2); setMat([255, 240, 160], 120, 30); p.torus(R * 1.5, R * 0.08, 24, 8); p.pop(); }
+          if (glow) {
+            p.push(); p.translate(0, R * 2.4, 0); p.rotateX(Math.PI / 2); setMat([255, 238, 150], 120, 30); p.torus(R * 1.6, R * 0.09, 24, 8); p.pop();
+          }
           p.push();
           p.rotateY(ti * 0.5);
-          // petals
           for (let i = 0; i < n; i++) {
             const ang = (i / n) * Math.PI * 2;
             setMat(tint(lerpRgb(a, b, i / Math.max(1, n)), 0.06), 70, 14);
-            p.push(); p.rotateZ(ang); p.translate(0, -(R * 1.0 + R * 0.66), 0); p.rotateX(-0.32);
-            p.ellipsoid(R * 0.28, R * 0.66, R * 0.22, 12, 8); p.pop();
+            p.push(); p.rotateZ(ang); p.translate(0, -(R * 1.0 + R * 0.64), 0); p.rotateX(-0.32);
+            p.ellipsoid(R * 0.28, R * 0.64, R * 0.22, 12, 8); p.pop();
           }
-          // head
-          setMat(tint(a, 0.5), 50, 14); p.push(); p.sphere(R, 28, 22); p.pop();
-          // face
+          setMat(tint(a, 0.5), 50, 14); p.push(); p.sphere(R, 26, 20); p.pop();
           const dark: RGB = [45, 38, 52];
           for (const sx of [-1, 1]) { const x = sx * R * 0.32, y = -R * 0.04; p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 15, 6); p.sphere(R * 0.09, 8, 6); p.pop(); }
           for (const sx of [-1, 1]) { const x = sx * R * 0.46, y = R * 0.14; p.push(); p.translate(x, y, surfZ(R, x, y)); setMat([255, 165, 190], 20, 6); p.ellipsoid(R * 0.12, R * 0.08, R * 0.04, 10, 6); p.pop(); }
           { const x = 0, y = R * 0.22; p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 15, 6); p.sphere(R * 0.05, 8, 6); p.pop(); }
           p.pop();
-          // stem / body beads
-          for (let k = 1; k <= 3; k++) {
-            setMat(tint(k % 2 ? a : b, 0.2), 50, 12);
-            p.push(); p.translate(0, R * (0.9 + k * 0.5), 0); p.sphere(R * 0.34, 14, 10); p.pop();
-          }
+          for (let k = 1; k <= 3; k++) { setMat(tint(k % 2 ? a : b, 0.2), 50, 12); p.push(); p.translate(0, R * (0.9 + k * 0.5), 0); p.sphere(R * 0.34, 14, 10); p.pop(); }
         };
 
         p.draw = () => {
           t += 0.016;
-          p.background(238, 234, 248);
+          p.background(228, 238, 250); // sky
           p.ambientLight(150, 150, 158);
-          p.directionalLight(150, 150, 158, -0.4, -0.6, -0.7);
-          p.pointLight(120, 120, 128, -200, -260, 360);
+          p.directionalLight(150, 150, 158, -0.4, -0.7, -0.6);
+          p.pointLight(120, 120, 128, -200, -300, 360);
           p.noStroke();
 
-          const L = layout();
-          scrollY = Math.max(0, Math.min(L.maxScroll, scrollY));
-          const list = flowersRef.current;
-          for (let i = 0; i < list.length; i++) {
-            const { cx, cy } = cellCenter(i, L);
-            if (cy < -120 || cy > p.height + 160) continue; // cull offscreen
-            const R = Math.min(L.cell, L.cellH) * 0.2;
-            const bob = Math.sin(t * 1.6 + i) * R * 0.12;
-            const glow = list[i].id === selRef.current;
+          drawGround();
+
+          placements = computeLayout();
+          for (const pl of placements) {
+            // soft shadow on the ground
             p.push();
-            p.translate(cx - p.width / 2, cy - p.height / 2 - R * 1.2 + bob, 0);
-            drawFlower(list[i].genome, R, t + i, glow);
+            p.translate(pl.sx - p.width / 2, pl.sy - p.height / 2 + pl.R * 2.35, -2);
+            p.noStroke(); p.fill(70, 90, 70, 60); p.ellipse(0, 0, pl.R * 2.3, pl.R * 0.7);
+            p.pop();
+            // flower
+            const bob = Math.sin(t * 1.6 + pl.sx) * pl.R * 0.06;
+            p.push();
+            p.translate(pl.sx - p.width / 2, pl.sy - p.height / 2 + bob, 0);
+            drawChar(pl.genome, pl.R, t + pl.sx * 0.01, pl.id === selRef.current);
             p.pop();
           }
         };
 
         p.mousePressed = () => {
+          // Ignore clicks outside the canvas (e.g. on the side panel).
           if (p.mouseX < 0 || p.mouseX > p.width || p.mouseY < 0 || p.mouseY > p.height) return;
-          const L = layout();
-          const list = flowersRef.current;
-          let best = -1, bestD = 1e9;
-          for (let i = 0; i < list.length; i++) {
-            const { cx, cy } = cellCenter(i, L);
-            const d = Math.hypot(p.mouseX - cx, p.mouseY - (cy - 6));
-            if (d < bestD) { bestD = d; best = i; }
+          let best: Place | null = null, bestD = 1e9;
+          for (const pl of placements) {
+            const d = Math.hypot(p.mouseX - pl.sx, p.mouseY - pl.sy);
+            if (d < bestD) { bestD = d; best = pl; }
           }
-          const R = Math.min(L.cell, L.cellH) * 0.2;
-          if (best >= 0 && bestD < R * 2.4) onSelRef.current(list[best].id);
-          else onSelRef.current(null);
-        };
-
-        p.mouseWheel = (e: { delta: number }) => {
-          scrollY += e.delta;
-          return false;
+          // Only SELECT on a hit. Never clear the selection on a miss (so the
+          // side panel and its buttons stay alive).
+          if (best && bestD < best.R * 1.7) onSelRef.current(best.id);
         };
       };
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import BlitzGarden, { type BlitzFlower } from "@/components/BlitzGarden";
 import FlowerPreview from "@/components/FlowerPreview";
 import RarityBadge from "@/components/RarityBadge";
@@ -14,7 +13,6 @@ import { nomPoetique } from "@/lib/flower-random";
 import { loadChat, postChat, type ChatMsg } from "@/lib/social";
 
 export default function BlitzGardenPage() {
-  const router = useRouter();
   const [flowers, setFlowers] = useState<BlitzFlower[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
@@ -24,7 +22,7 @@ export default function BlitzGardenPage() {
     const owned = loadCollection()
       .filter((f) => f.owned)
       .map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "you" }));
-    const players = PLAYER_FLOWERS.slice(0, 30).map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "player" }));
+    const players = PLAYER_FLOWERS.slice(0, 24).map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "player" }));
     setFlowers([...owned, ...players]);
     setChat(loadChat());
   }, []);
@@ -39,9 +37,9 @@ export default function BlitzGardenPage() {
     setInput("");
   }
 
-  function viewIn3D(g: BlitzFlower) {
+  /** Stash the flower so /play loads it, then the Link navigates there. */
+  function stashView(g: BlitzFlower) {
     try { sessionStorage.setItem("fm_view", JSON.stringify(g.genome)); } catch {}
-    router.push("/play");
   }
 
   return (
@@ -58,21 +56,24 @@ export default function BlitzGardenPage() {
         </div>
         <div className="flex items-center gap-2 text-xs">
           <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
-          <Link href="/play" className="rounded-full bg-zinc-900 px-3 py-1.5 font-medium text-white">Play</Link>
+          <Link href="/play" className="rounded-full bg-zinc-900 px-3 py-1.5 font-medium text-white">Grow a Flower</Link>
         </div>
       </nav>
 
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* 3D garden */}
-        <section className="relative min-h-[55vh] flex-1">
+        <section className="relative min-h-[52vh] flex-1">
           <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-white/70 px-3 py-1 text-[11px] text-zinc-500 backdrop-blur-sm">
-            scroll to wander · click a flower to inspect
+            click a flower to inspect it
           </div>
           <BlitzGarden flowers={flowers} selectedId={selectedId} onSelect={setSelectedId} />
+        </section>
 
+        {/* Side panel: inspector + social chat */}
+        <aside className="flex h-[42vh] w-full flex-col border-t border-black/10 bg-white/70 backdrop-blur lg:h-auto lg:w-[360px] lg:border-l lg:border-t-0">
           {/* Inspector */}
-          {selected && selRarity && (
-            <div className="absolute bottom-3 left-1/2 z-10 w-[88%] max-w-sm -translate-x-1/2 rounded-2xl border border-black/10 bg-white/90 p-3 shadow-lg backdrop-blur">
+          {selected && selRarity ? (
+            <div className="border-b border-black/10 p-3">
               <div className="flex items-center gap-3">
                 <FlowerPreview genome={selected.genome} size={72} />
                 <div className="min-w-0 flex-1">
@@ -85,21 +86,33 @@ export default function BlitzGardenPage() {
                     <span className="text-[10px] text-zinc-500">Rank #{rank(selected.genome)}</span>
                     <span className="text-[10px] text-zinc-400">@{selected.owner}</span>
                   </div>
+                  <div className="mt-2 flex gap-2">
+                    <Link
+                      href="/play"
+                      onClick={() => stashView(selected)}
+                      className="rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-medium text-white"
+                    >
+                      View in 3D
+                    </Link>
+                    <button
+                      onClick={() => setSelectedId(null)}
+                      className="rounded-full border border-black/10 px-3 py-1.5 text-[11px] text-zinc-500 transition hover:bg-black/5"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-                <button onClick={() => viewIn3D(selected)} className="rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-medium text-white">
-                  View
-                </button>
               </div>
             </div>
+          ) : (
+            <div className="border-b border-black/10 p-3 text-xs text-zinc-400">
+              Click a flower in the garden to see its name, rank and rarity.
+            </div>
           )}
-        </section>
 
-        {/* Social window */}
-        <aside className="flex h-[40vh] w-full flex-col border-t border-black/10 bg-white/70 backdrop-blur lg:h-auto lg:w-[340px] lg:border-l lg:border-t-0">
-          <div className="border-b border-black/10 px-4 py-2 font-display text-sm text-zinc-700">
-            Garden chat
-          </div>
-          <div className="flex-1 space-y-2 overflow-y-auto p-3" style={{ scrollbarWidth: "thin" }}>
+          {/* Garden chat */}
+          <div className="px-4 py-2 font-display text-sm text-zinc-700">Garden chat</div>
+          <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-2" style={{ scrollbarWidth: "thin" }}>
             {chat.map((m) => (
               <div key={m.id} className="text-sm">
                 <span className="font-display text-[11px] text-fuchsia-500">@{m.owner}</span>{" "}
