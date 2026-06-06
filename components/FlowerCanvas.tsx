@@ -131,35 +131,38 @@ export default function FlowerCanvas({
           }
         };
 
+        // NOTE: p5's cone apex points toward +Y by default, so cones that should
+        // point up are flipped with rotateZ(PI).
         const drawHat = (R: number, type: string) => {
           if (!type || type === "none") return;
           if (type === "cap") {
-            // Dome hugging the crown of the head + forward brim.
+            // Small rounded crown sitting on the top of the head + forward brim.
             setMat([230, 70, 90]);
-            p.push(); p.translate(0, -R * 0.7, 0); p.scale(1.02, 0.6, 1.02); p.sphere(R * 0.7, 22, 16); p.pop();
+            p.push(); p.translate(0, -R * 0.82, 0); p.scale(1.15, 0.78, 1.15); p.sphere(R * 0.56, 24, 18); p.pop();
             setMat([205, 52, 72]);
-            p.push(); p.translate(0, -R * 0.66, R * 0.55); p.rotateX(-0.35); p.ellipsoid(R * 0.5, R * 0.06, R * 0.34, 18, 8); p.pop();
+            p.push(); p.translate(0, -R * 0.5, R * 0.62); p.rotateX(0.15); p.ellipsoid(R * 0.42, R * 0.06, R * 0.3, 18, 8); p.pop();
           } else if (type === "party") {
-            // Cone base sits on the head top (-R), apex up.
+            // Cone flipped so the apex points up; base rests on the head top.
             setMat([232, 92, 200]);
-            p.push(); p.translate(0, -R * 1.55, 0); p.cone(R * 0.44, R * 1.1, 22, 1, true); p.pop();
-            ball(0, -R * 2.12, 0, R * 0.12, [255, 240, 120]);
+            p.push(); p.translate(0, -R * 1.5, 0); p.rotateZ(Math.PI); p.cone(R * 0.42, R * 1.0, 22, 1, true); p.pop();
+            ball(0, -R * 2.02, 0, R * 0.11, [255, 240, 120]);
           } else if (type === "tophat") {
             setMat([40, 36, 48]);
             p.push(); p.translate(0, -R * 1.5, 0); p.cylinder(R * 0.46, R * 1.0, 24, 1); p.pop();
             p.push(); p.translate(0, -R * 1.0, 0); p.cylinder(R * 0.78, R * 0.1, 28, 1); p.pop();
           } else if (type === "crown") {
-            // Horizontal gold band around the head + upward spikes.
+            // Horizontal gold band around the head + upward spikes (flipped).
             setMat([240, 195, 60]);
             p.push(); p.translate(0, -R * 0.78, 0); p.rotateX(Math.PI / 2); p.torus(R * 0.62, R * 0.1, 24, 10); p.pop();
             for (let k = 0; k < 6; k++) {
               const a = (k / 6) * Math.PI * 2;
-              p.push(); p.translate(Math.cos(a) * R * 0.62, -R * 0.95, Math.sin(a) * R * 0.62); p.cone(R * 0.09, R * 0.26, 10, 1, true); p.pop();
+              p.push(); p.translate(Math.cos(a) * R * 0.62, -R * 0.92, Math.sin(a) * R * 0.62); p.rotateZ(Math.PI); p.cone(R * 0.09, R * 0.26, 10, 1, true); p.pop();
             }
           } else if (type === "beret") {
+            // Flat disc on the very top, leaning slightly back, with a stalk.
             setMat([60, 70, 140]);
-            p.push(); p.translate(0, -R * 0.72, -R * 0.08); p.rotateZ(0.22); p.scale(1.18, 0.42, 1.18); p.sphere(R * 0.62, 22, 14); p.pop();
-            ball(R * 0.22, -R * 0.82, -R * 0.05, R * 0.07, [60, 70, 140]);
+            p.push(); p.translate(0, -R * 0.92, -R * 0.04); p.rotateX(-0.18); p.scale(1.25, 0.34, 1.25); p.sphere(R * 0.6, 24, 14); p.pop();
+            ball(0, -R * 1.12, -R * 0.04, R * 0.06, [60, 70, 140]);
           }
         };
 
@@ -220,29 +223,53 @@ export default function FlowerCanvas({
           }
         };
 
-        const drawFace = (R: number, mood: string) => {
-          const dark: RGB = [45, 38, 52]; const blush: RGB = [255, 160, 185]; const nose: RGB = [255, 150, 175];
-          for (const sx of [-1, 1]) for (const [ox, oy] of [[-0.1, 0], [0, -0.03], [0.1, 0]] as const) {
-            const x = sx * R * 0.32 + ox * R, y = -R * 0.04 + oy * R;
-            p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 15, 6); p.sphere(R * 0.055, 10, 8); p.pop();
-          }
+        const drawFace = (R: number, mood: string, t: number) => {
+          const dark: RGB = [40, 34, 48], blush: RGB = [255, 160, 185], nose: RGB = [255, 150, 175], white: RGB = [255, 255, 255];
+          const blinking = (t % 3.4) < 0.14; // periodic blink for open-eye moods
+
+          const closedArc = (sx: number, sad = false) => {
+            const offs: [number, number][] = sad ? [[-0.1, -0.02], [0, 0.02], [0.1, -0.02]] : [[-0.1, 0], [0, -0.03], [0.1, 0]];
+            for (const [ox, oy] of offs) {
+              const x = sx * R * 0.32 + ox * R, y = -R * 0.04 + oy * R;
+              p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 15, 6); p.sphere(R * 0.05, 10, 8); p.pop();
+            }
+          };
+          const openEye = (sx: number) => {
+            const x = sx * R * 0.34, y = -R * 0.05;
+            p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 20, 8); p.scale(1, blinking ? 0.12 : 1, 1); p.sphere(R * 0.088, 14, 12); p.pop();
+            if (!blinking) { const sxx = x - sx * R * 0.03, syy = y - R * 0.035; p.push(); p.translate(sxx, syy, surfZ(R, sxx, syy, R * 0.05)); setMat(white, 200, 90); p.sphere(R * 0.026, 8, 6); p.pop(); }
+          };
+
+          // Eyes vary by mood.
+          if (mood === "joyeuse") { openEye(-1); openEye(1); }
+          else if (mood === "espiegle") { closedArc(-1); openEye(1); } // wink
+          else if (mood === "melancolique") {
+            closedArc(-1, true); closedArc(1, true);
+            const tx = -R * 0.3, ty = R * 0.04 + ((t % 2) / 2) * R * 0.26; // sliding tear
+            p.push(); p.translate(tx, ty, surfZ(R, tx, ty, R * 0.03)); setMat([120, 185, 255], 200, 90); p.sphere(R * 0.035, 10, 8); p.pop();
+          } else { closedArc(-1); closedArc(1); } // sereine / reveuse
+
           for (const sx of [-1, 1]) { const x = sx * R * 0.5, y = R * 0.14; p.push(); p.translate(x, y, surfZ(R, x, y)); setMat(blush, 25, 6); p.ellipsoid(R * 0.14, R * 0.09, R * 0.05, 14, 8); p.pop(); }
           { const x = 0, y = R * 0.04; p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.02)); setMat(nose, 40, 12); p.sphere(R * 0.05, 12, 10); p.pop(); }
+
+          // Mouth varies by mood + a tiny breathing bob.
+          const bob = Math.sin(t * 2.6) * R * 0.008;
           const mouth: [number, number, number][] = [];
-          const add = (x: number, y: number, r: number) => mouth.push([x, y, r]);
-          if (mood === "joyeuse") for (let k = -3; k <= 3; k++) add(k * R * 0.05, R * 0.2 + Math.abs(k) * R * 0.028, R * 0.04);
+          const add = (x: number, y: number, r: number) => mouth.push([x, y + bob, r]);
+          if (mood === "joyeuse") for (let k = -3; k <= 3; k++) add(k * R * 0.05, R * 0.2 + Math.abs(k) * R * 0.03, R * 0.045);
           else if (mood === "espiegle") { add(-R * 0.09, R * 0.2, R * 0.045); add(-R * 0.03, R * 0.24, R * 0.045); add(R * 0.03, R * 0.24, R * 0.045); add(R * 0.09, R * 0.2, R * 0.045); }
-          else if (mood === "melancolique") for (let k = -2; k <= 2; k++) add(k * R * 0.055, R * 0.26 - Math.abs(k) * R * 0.025, R * 0.04);
+          else if (mood === "melancolique") for (let k = -2; k <= 2; k++) add(k * R * 0.055, R * 0.27 - Math.abs(k) * R * 0.025, R * 0.04);
+          else if (mood === "reveuse") for (let k = -2; k <= 2; k++) add(k * R * 0.05, R * 0.22 + Math.abs(k) * R * 0.012, R * 0.035);
           else for (let k = -2; k <= 2; k++) add(k * R * 0.05, R * 0.21 + Math.abs(k) * R * 0.02, R * 0.04);
           for (const [mx, my, mr] of mouth) { p.push(); p.translate(mx, my, surfZ(R, mx, my, R * 0.01)); setMat(dark, 15, 6); p.sphere(mr, 10, 8); p.pop(); }
         };
 
         // A real themed 3D object per feed action, drawn centred at the origin.
         const drawFeedObject = (action: FeedSignal["action"], R: number) => {
-          if (action === "eau") { // water droplet
+          if (action === "eau") { // water droplet (round bottom, point up)
             setMat([95, 180, 255], 200, 60);
             p.push(); p.translate(0, R * 0.05, 0); p.sphere(R * 0.12, 16, 12); p.pop();
-            p.push(); p.translate(0, -R * 0.14, 0); p.cone(R * 0.1, R * 0.2, 16, 1, true); p.pop();
+            p.push(); p.translate(0, -R * 0.14, 0); p.rotateZ(Math.PI); p.cone(R * 0.1, R * 0.2, 16, 1, true); p.pop();
           } else if (action === "engrais") { // burger
             setMat([238, 172, 92]); p.push(); p.translate(0, -R * 0.12, 0); p.scale(1, 0.66, 1); p.sphere(R * 0.18, 18, 14); p.pop();
             setMat([255, 240, 130]); p.push(); p.translate(0, -R * 0.12, R * 0.1); p.sphere(R * 0.02, 8, 6); p.pop();
@@ -337,7 +364,7 @@ export default function FlowerCanvas({
           p.rotateZ(rig.headTilt);
           p.scale(1 + 0.08 * gulp);
           setMat(core, 55, 16); p.push(); p.sphere(R, 40, 30); p.pop();
-          drawFace(R, g.humeur);
+          drawFace(R, g.humeur, danceT);
           drawHat(R, g.chapeau ?? "none");
           drawGlasses(R, g.lunettes ?? "none");
           p.pop();

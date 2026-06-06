@@ -112,10 +112,28 @@ export default function FlowerPreview({ genome, size = 140 }: Props) {
       <circle cx={cx} cy={cy} r={coreR} fill={`url(#${gid}-core)`} />
       <ellipse cx={cx - coreR * 0.55} cy={cy + coreR * 0.2} rx={coreR * 0.22} ry={coreR * 0.14} fill="#ff9fc0" opacity={0.7} />
       <ellipse cx={cx + coreR * 0.55} cy={cy + coreR * 0.2} rx={coreR * 0.22} ry={coreR * 0.14} fill="#ff9fc0" opacity={0.7} />
-      <path d={`M ${cx - coreR * 0.5} ${cy - coreR * 0.05} q ${coreR * 0.18} ${coreR * 0.18} ${coreR * 0.36} 0`} stroke="#3a3346" strokeWidth={size * 0.012} fill="none" strokeLinecap="round" />
-      <path d={`M ${cx + coreR * 0.14} ${cy - coreR * 0.05} q ${coreR * 0.18} ${coreR * 0.18} ${coreR * 0.36} 0`} stroke="#3a3346" strokeWidth={size * 0.012} fill="none" strokeLinecap="round" />
+      {/* Eyes vary by mood (match the 3D expression) */}
+      {(() => {
+        const ex = coreR * 0.34, ey = cy - coreR * 0.05, sw = size * 0.012, col = "#3a3346";
+        const happy = (sx: number) => <path key={sx} d={`M ${cx + sx * ex - coreR * 0.16} ${ey} q ${coreR * 0.16} ${coreR * 0.16} ${coreR * 0.32} 0`} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />;
+        const open = (sx: number) => <g key={sx}><circle cx={cx + sx * ex} cy={ey} r={coreR * 0.12} fill={col} /><circle cx={cx + sx * ex - coreR * 0.04} cy={ey - coreR * 0.04} r={coreR * 0.035} fill="#fff" /></g>;
+        const sad = (sx: number) => <path key={sx} d={`M ${cx + sx * ex - coreR * 0.16} ${ey + coreR * 0.05} q ${coreR * 0.16} ${-coreR * 0.16} ${coreR * 0.32} 0`} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />;
+        const m = genome.humeur;
+        if (m === "joyeuse") return [open(-1), open(1)];
+        if (m === "espiegle") return [happy(-1), open(1)];
+        if (m === "melancolique") return [sad(-1), sad(1), <circle key="tear" cx={cx - ex} cy={cy + coreR * 0.12} r={coreR * 0.05} fill="#7ab8ff" />];
+        return [happy(-1), happy(1)];
+      })()}
       <circle cx={cx} cy={cy + coreR * 0.12} r={coreR * 0.07} fill="#ff7fa8" />
-      <path d={`M ${cx - coreR * 0.18} ${cy + coreR * 0.32} q ${coreR * 0.18} ${coreR * 0.2} ${coreR * 0.36} 0`} stroke="#3a3346" strokeWidth={size * 0.012} fill="none" strokeLinecap="round" />
+      {/* Mouth varies by mood */}
+      {(() => {
+        const my = cy + coreR * 0.32, sw = size * 0.012, col = "#3a3346";
+        const m = genome.humeur;
+        if (m === "joyeuse") return <path d={`M ${cx - coreR * 0.22} ${cy + coreR * 0.24} q ${coreR * 0.22} ${coreR * 0.3} ${coreR * 0.44} 0`} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />;
+        if (m === "espiegle") return <path d={`M ${cx - coreR * 0.18} ${my} q ${coreR * 0.09} ${coreR * 0.13} ${coreR * 0.18} 0 q ${coreR * 0.09} ${coreR * 0.13} ${coreR * 0.18} 0`} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />;
+        if (m === "melancolique") return <path d={`M ${cx - coreR * 0.18} ${my + coreR * 0.07} q ${coreR * 0.18} ${-coreR * 0.16} ${coreR * 0.36} 0`} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />;
+        return <path d={`M ${cx - coreR * 0.16} ${my} q ${coreR * 0.16} ${coreR * 0.16} ${coreR * 0.32} 0`} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />;
+      })()}
 
       {/* Glasses */}
       {glasses !== "none" && (() => {
