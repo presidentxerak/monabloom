@@ -594,37 +594,28 @@ export default function GardenPage() {
   return (
     <div className="min-h-screen text-zinc-800">
       {/* Nav */}
-      <nav className="sticky top-0 z-30 flex items-center justify-between border-b border-black/10 bg-white/65 px-4 py-3 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="brand-title font-display text-lg">
+      <nav className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 border-b border-black/10 bg-white/65 px-3 py-2.5 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <Link href="/" className="brand-title font-display text-base sm:text-lg">
             FLOWER<span className="brand-dot">MON</span>
           </Link>
-          <span className="hidden rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500 sm:inline-block">
-            Cards
-          </span>
           <Link href="/blitz" className="hidden rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500 transition hover:bg-white sm:inline-block">
             Blitz Garden
           </Link>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <SoundEngine genome={dummyGenome} />
           {wallet ? (
-            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-700">
-              {wallet.slice(0, 6)}…{wallet.slice(-4)}
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] text-emerald-700">
+              {wallet.slice(0, 5)}…{wallet.slice(-3)}
             </span>
           ) : (
-            <button
-              onClick={connectWallet}
-              className="pill rounded-full px-3 py-1.5 text-xs"
-            >
+            <button onClick={connectWallet} className="pill rounded-full px-3 py-1.5 text-xs">
               Collect
             </button>
           )}
-          <button
-            onClick={createFlower}
-            className="btn-bump rounded-full px-3 py-1.5 text-xs font-medium"
-          >
-            + New flower
+          <button onClick={createFlower} className="btn-bump rounded-full px-3 py-1.5 text-xs font-medium">
+            + New
           </button>
         </div>
       </nav>

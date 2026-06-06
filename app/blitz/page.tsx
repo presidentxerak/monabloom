@@ -57,18 +57,21 @@ export default function BlitzGardenPage() {
   return (
     <div className="flex h-screen flex-col overflow-hidden text-zinc-800">
       {/* Nav */}
-      <nav className="flex items-center justify-between border-b border-black/10 bg-white/70 px-4 py-3 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="brand-title font-display text-lg">
+      <nav className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 bg-white/70 px-3 py-2.5 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <Link href="/" className="brand-title font-display text-base sm:text-lg">
             FLOWER<span className="brand-dot">MON</span>
           </Link>
-          <span className="rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500">
+          <span className="hidden rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500 sm:inline">
             Blitz Garden
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
           <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
-          <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">Grow a Flower</Link>
+          <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">
+            <span className="hidden sm:inline">Grow a Flower</span>
+            <span className="sm:hidden">Play</span>
+          </Link>
         </div>
       </nav>
 

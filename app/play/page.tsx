@@ -32,6 +32,7 @@ export default function Play() {
   const [dance, setDance] = useState(0);
   const [wardrobe, setWardrobe] = useState<WardrobeTab | null>(null);
   const [music, setMusic] = useState(false);
+  const [health, setHealth] = useState(70);
 
   useEffect(() => {
     try {
@@ -72,6 +73,7 @@ export default function Play() {
   function handleFeed(action: FeedAction) {
     setGenome((g) => feedFlower(g, action));
     setFeedSignal({ action, id: Date.now() });
+    setHealth((h) => Math.min(100, h + (action === "pouvoir" ? 8 : 12)));
     const meta = FEED_ACTIONS.find((a) => a.id === action);
     if (meta) note(meta.reply);
     const engine = getSoundEngine();
@@ -82,6 +84,7 @@ export default function Play() {
   function handlePower() {
     setPowerSignal({ id: Date.now() });
     setGenome((g) => feedFlower(g, "pouvoir"));
+    setHealth((h) => Math.min(100, h + 8));
     getSoundEngine().playSparkle();
     note("A burst of power!");
   }
@@ -106,54 +109,63 @@ export default function Play() {
 
   return (
     <main className="relative flex min-h-screen flex-col gap-3 p-3 lg:h-screen lg:flex-row lg:overflow-hidden lg:gap-4 lg:p-4">
-      <section className="relative flex min-h-[60vh] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl lg:min-h-0">
-        <header className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-2">
-          <Link href="/" className="brand-title font-display text-lg">
-            FLOWER<span className="brand-dot">MON</span>
-          </Link>
-          <Link href="/cards" className="pill rounded-full px-3 py-1 text-xs font-medium">
-            Cards
-          </Link>
-          <Link href="/blitz" className="pill rounded-full px-3 py-1 text-xs font-medium">
-            Blitz Garden
-          </Link>
-        </header>
-
-        <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 text-center">
-          <div className="glass inline-flex flex-col items-center rounded-2xl px-4 py-1.5">
-            <span className="font-display text-sm tracking-wide text-zinc-800">
-              {identity.name} <span className="text-zinc-400">{identity.token}</span>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider" style={{ color: identity.color }}>
-              {identity.tier} · Rank #{identity.rank}
-            </span>
-          </div>
-        </div>
-
-        <div className="absolute right-3 top-3 z-10">
-          <SoundEngine genome={genome} />
-        </div>
-
+      <section className="relative flex min-h-[58vh] flex-1 flex-col overflow-hidden rounded-3xl lg:min-h-0">
+        {/* 3D flower behind everything */}
         <div className="absolute inset-0">
           <FlowerCanvas genome={genome} feed={feedSignal} dance={dance} power={powerSignal} />
         </div>
 
-        <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+        {/* Top bar */}
+        <div className="relative z-10 flex items-start justify-between gap-2 p-2.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Link href="/" className="brand-title font-display text-base sm:text-lg">
+              FLOWER<span className="brand-dot">MON</span>
+            </Link>
+            <Link href="/cards" className="pill rounded-full px-2.5 py-0.5 text-[10px] font-medium sm:text-xs">Cards</Link>
+            <Link href="/blitz" className="pill rounded-full px-2.5 py-0.5 text-[10px] font-medium sm:text-xs">Blitz</Link>
+          </div>
+          <SoundEngine genome={genome} />
+        </div>
+
+        {/* Identity card + health gauge */}
+        <div className="relative z-10 flex justify-center px-2">
+          <div className="glass flex max-w-[92%] flex-col items-center rounded-2xl px-3 py-1.5">
+            <span className="truncate font-display text-xs tracking-wide text-zinc-800 sm:text-sm">
+              {identity.name} <span className="text-zinc-400">{identity.token}</span>
+            </span>
+            <span className="text-[9px] uppercase tracking-wider sm:text-[10px]" style={{ color: identity.color }}>
+              {identity.tier} · Rank #{identity.rank}
+            </span>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="text-[8px] uppercase tracking-wider text-zinc-400">HP</span>
+              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-black/10">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${health}%`, background: `linear-gradient(90deg, ${genome.couleurA}, ${genome.couleurB})` }}
+                />
+              </div>
+              <span className="text-[8px] tabular-nums text-zinc-400">{health}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Feed note + action bar */}
+        <div className="relative z-10 flex flex-col items-center gap-2 px-2 pb-3">
           {feedNote && (
-            <span className="rounded-full bg-black/45 px-3 py-1 text-xs text-white backdrop-blur-sm">
+            <span className="max-w-[90%] rounded-full bg-black/45 px-3 py-1 text-center text-[11px] text-white backdrop-blur-sm">
               {feedNote}
             </span>
           )}
-          <div className="pointer-events-auto">
-            <FeedBar
-              onFeed={handleFeed}
-              onPower={handlePower}
-              onDance={handleDance}
-              onMusic={() => setMusic(true)}
-              onSave={handleSave}
-              onWardrobe={(tab) => setWardrobe(tab)}
-            />
-          </div>
+          <FeedBar
+            onFeed={handleFeed}
+            onPower={handlePower}
+            onDance={handleDance}
+            onMusic={() => setMusic(true)}
+            onSave={handleSave}
+            onWardrobe={(tab) => setWardrobe(tab)}
+          />
         </div>
       </section>
 

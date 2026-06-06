@@ -38,9 +38,9 @@ export default function BlitzGarden({
 
       let t = 0;
       const R = 72;
-      const EL = 0.9;            // fixed 3/4 elevation (camera never goes under the map)
+      const EL = 0.42;           // low elevation: a front view tilted slightly down
       let az = 0.7;              // azimuth (drag to rotate)
-      let dist = 2100;          // zoom
+      let dist = 2300;          // zoom
       let downX = 0, downY = 0, moved = false;
       let pickReq: { x: number; y: number } | null = null;
       let eye = { x: 0, y: -1, z: 1 };
@@ -70,9 +70,9 @@ export default function BlitzGarden({
         const setMat = (r: number, g: number, b: number, a = 255, spec = 40, shine = 6) => { p.fill(r, g, b, a); p.ambientMaterial(r, g, b); p.specularMaterial(spec); p.shininess(shine); };
 
         // ── Decor pieces ──
-        const tree = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(122, 86, 54); p.push(); p.translate(0, -42 * s, 0); p.cylinder(11 * s, 84 * s, 8, 1); p.pop(); setMat(88, 172, 100); p.push(); p.translate(0, -118 * s, 0); p.sphere(58 * s, 12, 10); p.pop(); p.push(); p.translate(-32 * s, -96 * s, 10 * s); p.sphere(40 * s, 10, 8); p.pop(); p.push(); p.translate(34 * s, -102 * s, -8 * s); p.sphere(42 * s, 10, 8); p.pop(); p.pop(); };
-        const fir = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(120, 86, 54); p.push(); p.translate(0, -30 * s, 0); p.cylinder(9 * s, 62 * s, 8, 1); p.pop(); setMat(58, 148, 92); for (let k = 0; k < 3; k++) { const yy = -72 * s - k * 56 * s; const rr = (74 - k * 22) * s; p.push(); p.translate(0, yy, 0); p.rotateZ(Math.PI); p.cone(rr, 86 * s, 8, 1, true); p.pop(); } p.pop(); };
-        const bush = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(98, 178, 108); p.push(); p.translate(0, -24 * s, 0); p.sphere(32 * s, 10, 8); p.pop(); p.push(); p.translate(-28 * s, -16 * s, 6 * s); p.sphere(24 * s, 8, 6); p.pop(); p.push(); p.translate(28 * s, -16 * s, -6 * s); p.sphere(26 * s, 8, 6); p.pop(); p.pop(); };
+        const tree = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(150, 100, 60); p.push(); p.translate(0, -42 * s, 0); p.cylinder(11 * s, 84 * s, 8, 1); p.pop(); setMat(70, 210, 100); p.push(); p.translate(0, -118 * s, 0); p.sphere(58 * s, 12, 10); p.pop(); p.push(); p.translate(-32 * s, -96 * s, 10 * s); p.sphere(40 * s, 10, 8); p.pop(); p.push(); p.translate(34 * s, -102 * s, -8 * s); p.sphere(42 * s, 10, 8); p.pop(); p.pop(); };
+        const fir = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(150, 100, 60); p.push(); p.translate(0, -30 * s, 0); p.cylinder(9 * s, 62 * s, 8, 1); p.pop(); setMat(40, 185, 105); for (let k = 0; k < 3; k++) { const yy = -72 * s - k * 56 * s; const rr = (74 - k * 22) * s; p.push(); p.translate(0, yy, 0); p.rotateZ(Math.PI); p.cone(rr, 86 * s, 8, 1, true); p.pop(); } p.pop(); };
+        const bush = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(86, 215, 116); p.push(); p.translate(0, -24 * s, 0); p.sphere(32 * s, 10, 8); p.pop(); p.push(); p.translate(-28 * s, -16 * s, 6 * s); p.sphere(24 * s, 8, 6); p.pop(); p.push(); p.translate(28 * s, -16 * s, -6 * s); p.sphere(26 * s, 8, 6); p.pop(); p.pop(); };
         const barn = (it: Scatter) => { p.push(); p.translate(it.x, 0, it.z); p.rotateY(it.rot); setMat(192, 74, 74); p.push(); p.translate(0, -74, 0); p.box(230, 150, 170); p.pop(); setMat(152, 52, 52); p.push(); p.translate(0, -168, 0); p.rotateZ(Math.PI / 4); p.box(150, 150, 178); p.pop(); setMat(118, 40, 40); p.push(); p.translate(0, -42, 87); p.box(64, 84, 8); p.pop(); p.pop(); };
         const sheep = (lx: number, lz: number) => { p.push(); p.translate(lx, 0, lz); setMat(242, 242, 247); p.push(); p.translate(0, -42, 0); p.sphere(34, 12, 10); p.pop(); p.push(); p.translate(-26, -46, 0); p.sphere(20, 10, 8); p.pop(); setMat(44, 44, 52); p.push(); p.translate(40, -48, 0); p.sphere(16, 10, 8); p.pop(); for (const a of [-18, 18]) for (const b of [-14, 14]) { p.push(); p.translate(a, -14, b); p.cylinder(5, 30, 6, 1); p.pop(); } p.pop(); };
         const pen = (it: Scatter) => { p.push(); p.translate(it.x, 0, it.z); p.rotateY(it.rot); setMat(156, 124, 92); const hf = 190; for (const [ax, az2, w, d] of [[0, -hf, 2 * hf, 14], [0, hf, 2 * hf, 14], [-hf, 0, 14, 2 * hf], [hf, 0, 14, 2 * hf]] as const) { p.push(); p.translate(ax, -34, az2); p.box(w, 68, d); p.pop(); } sheep(60, -40); sheep(-60, 50); sheep(10, 90); p.pop(); };
@@ -80,9 +80,9 @@ export default function BlitzGarden({
         const rainbow = () => { const cols: [number, number, number][] = [[255, 96, 96], [255, 162, 64], [255, 232, 96], [112, 212, 112], [92, 172, 255], [124, 112, 242], [184, 112, 232]]; p.push(); p.translate(-1600, 0, -2200); for (let k = 0; k < 7; k++) { setMat(cols[k][0], cols[k][1], cols[k][2], 255, 60, 20); p.push(); p.torus(660 - k * 44, 20, 26, 8); p.pop(); } p.pop(); };
 
         const drawDecor = () => {
-          // Ground.
-          p.push(); p.rotateX(Math.PI / 2); setMat(150, 200, 138, 255, 8, 2); p.plane(MAP_R * 3, MAP_R * 3); p.pop();
-          p.push(); p.translate(0, -1, 0); p.rotateX(Math.PI / 2); setMat(166, 212, 150, 255, 8, 2); p.circle(0, 0, MAP_R * 2.1); p.pop();
+          // Ground (vivid grass).
+          p.push(); p.rotateX(Math.PI / 2); setMat(118, 214, 110, 255, 8, 2); p.plane(MAP_R * 3, MAP_R * 3); p.pop();
+          p.push(); p.translate(0, -1, 0); p.rotateX(Math.PI / 2); setMat(138, 226, 124, 255, 8, 2); p.circle(0, 0, MAP_R * 2.1); p.pop();
           // Sun + clouds + mountains far away.
           p.push(); p.translate(-2200, -2200, -2400); setMat(255, 226, 120, 255, 120, 30); p.sphere(320, 18, 14); p.pop();
           for (let k = 0; k < 9; k++) { const a = (k / 9) * Math.PI * 2 + 0.2; const mx = Math.cos(a) * MAP_R * 1.25, mz = Math.sin(a) * MAP_R * 1.25; const hgt = 900 + ((k * 211) % 500); p.push(); p.translate(mx, -hgt / 2, mz); p.rotateZ(Math.PI); setMat(150, 158, 205, 255, 8, 2); p.cone(700, hgt, 5, 1, true); p.pop(); p.push(); p.translate(mx, -hgt + 60, mz); p.rotateZ(Math.PI); setMat(240, 242, 252, 255, 8, 2); p.cone(230, 220, 5, 1, true); p.pop(); }
@@ -123,7 +123,8 @@ export default function BlitzGarden({
           const cx = 0, cy = -240, cz = 0;
           eye = { x: cx + Math.sin(az) * hr, y: cy - hh, z: cz + Math.cos(az) * hr };
           p.perspective(Math.PI / 3.1, w / h, 20, 18000);
-          p.camera(eye.x, eye.y, eye.z, cx, cy, cz, 0, -1, 0);
+          // up = (0,1,0): keeps the world right-side up (heads up, sky up).
+          p.camera(eye.x, eye.y, eye.z, cx, cy, cz, 0, 1, 0);
         };
 
         p.draw = () => {
@@ -141,10 +142,10 @@ export default function BlitzGarden({
             applyCamera();
           }
 
-          p.background(206, 230, 252);
-          p.ambientLight(168, 168, 174);
-          p.directionalLight(160, 160, 168, -0.4, -0.7, -0.5);
-          p.pointLight(120, 120, 130, -1200, -1800, 1200);
+          p.background(150, 208, 255);
+          p.ambientLight(200, 200, 205);
+          p.directionalLight(210, 210, 215, -0.4, -0.7, -0.5);
+          p.pointLight(150, 150, 160, -1200, -1800, 1200);
           p.noStroke();
           drawDecor();
           renderFlowers(false);

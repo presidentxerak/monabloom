@@ -63,14 +63,14 @@ export default function FeedBar({
   }
 
   return (
-    <div className="flex max-w-[94vw] flex-wrap items-end justify-center gap-1.5">
+    <div className="flex w-full max-w-[96vw] items-end gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:max-w-[94vw] sm:flex-wrap sm:justify-center sm:overflow-visible">
       {TILES.map((t) => (
         <button
           key={t.label}
           onClick={() => handle(t.kind)}
           title={t.label}
           aria-label={t.label}
-          className={`relative flex h-[58px] w-[50px] flex-col items-center justify-center gap-0.5 rounded-lg border bg-[#fbf7ec] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+          className={`relative flex h-[56px] w-[48px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border bg-[#fbf7ec] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
             t.accent ? "border-sky-400/70 ring-1 ring-sky-300/60" : "border-black/10"
           }`}
         >
