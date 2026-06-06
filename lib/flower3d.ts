@@ -144,10 +144,10 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number) {
   p.push();
   p.translate(0, bobY * R, 0);
 
-  // Petals (behind the head).
+  // Petals (just in front of the body).
   const n = genome.petales;
   p.push();
-  p.translate(0, -R * 0.1, -R * 0.32);
+  p.translate(0, -R * 0.1, R * 0.35);
   p.rotateZ(spin);
   for (let i = 0; i < n; i++) {
     const ang = (i / n) * Math.PI * 2; const v = vars[i % 12];

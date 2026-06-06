@@ -59,9 +59,17 @@ export async function connect(): Promise<string | null> {
   const accounts = (await eth.request({
     method: "eth_requestAccounts",
   })) as string[];
-  if (!accounts?.length) return null;
-  await ensureMonadChain(eth);
-  return accounts[0];
+  const acc = accounts?.[0] ?? null;
+  // Switching to Monad is best-effort: never let a declined/failed network
+  // switch drop an otherwise-successful wallet connection.
+  if (acc) {
+    try {
+      await ensureMonadChain(eth);
+    } catch {
+      // keep the connection even if the user stays on another network
+    }
+  }
+  return acc;
 }
 
 /** Silently read an already-authorised account (for reconnect on load). */

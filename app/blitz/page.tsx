@@ -10,7 +10,7 @@ import { loadCollection } from "@/lib/collection";
 import { computeRarity } from "@/lib/rarity";
 import { tokenLabel, rank } from "@/lib/identity";
 import { nomPoetique } from "@/lib/flower-random";
-import { loadChat, postChat, type ChatMsg } from "@/lib/social";
+import { fetchChat, sendChat, type ChatMsg } from "@/lib/social";
 
 export default function BlitzGardenPage() {
   const [flowers, setFlowers] = useState<BlitzFlower[]>([]);
@@ -24,17 +24,22 @@ export default function BlitzGardenPage() {
       .map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "you" }));
     const players = PLAYER_FLOWERS.slice(0, 24).map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "player" }));
     setFlowers([...owned, ...players]);
-    setChat(loadChat());
+
+    let alive = true;
+    fetchChat().then((m) => alive && setChat(m));
+    const iv = setInterval(() => fetchChat().then((m) => alive && setChat(m)), 5000);
+    return () => { alive = false; clearInterval(iv); };
   }, []);
 
   const selected = useMemo(() => flowers.find((f) => f.id === selectedId) ?? null, [flowers, selectedId]);
   const selRarity = selected ? computeRarity(selected.genome) : null;
 
-  function send() {
+  async function send() {
     const text = input.trim();
     if (!text) return;
-    setChat(postChat(text));
     setInput("");
+    const msgs = await sendChat(text);
+    if (msgs.length) setChat(msgs);
   }
 
   /** Stash the flower so /play loads it, then the Link navigates there. */

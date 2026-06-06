@@ -347,10 +347,10 @@ export default function FlowerCanvas({
           p.translate(rig.sway * R, -R * 0.95 + rig.bobY * R, 0);
           p.rotateY(rig.spin + rig.twist);
 
-          // Petals around the head.
+          // Petals just in front of the body.
           const n = Math.max(1, Math.round(petalesShown));
           p.push();
-          p.translate(0, -R * 0.1, -R * 0.32);
+          p.translate(0, -R * 0.1, R * 0.35);
           p.rotateZ(petalSpin);
           for (let i = 0; i < n; i++) {
             const ang = (i / n) * Math.PI * 2; const v = vars[i % 12];
