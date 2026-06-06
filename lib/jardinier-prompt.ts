@@ -18,6 +18,10 @@ Allowed deltas (all optional):
 - "couleurA": hex colour "#rrggbb"
 - "couleurB": hex colour "#rrggbb"
 - "humeur": one value among "joyeuse","reveuse","melancolique","espiegle","sereine"
+- "chapeau" (hat): one of "none","cap","party","tophat","crown","beret"
+- "lunettes" (glasses): one of "none","sun","thug","heart","round","star"
+- "chaussures" (shoes): one of "sneaker","boot","sandal","platform","classic","redhi"
+- "forme" (petal shape): an integer 0..6 (0 oval, 1 round, 2 diamond, 3 tube, 4 pointed, 5 ring, 6 beads)
 
 Rules:
 - Translate the player's emotions into mood and colours; words of quantity or

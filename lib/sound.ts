@@ -3,9 +3,24 @@
 // Web Audio API ambient + crystalline sound engine for Flowermon.
 // All audio is created on demand (after user gesture) to satisfy browser policy.
 
-const PENTATONIC_HZ = [261.63, 329.63, 392.0, 493.88, 523.25, 659.25, 783.99, 987.77];
-const AMBIENT_FREQS = [55.0, 82.41, 110.0, 164.81];
-const MELODY_PATTERN = [0, 2, 4, 7, 4, 2, 0, 5, 4, 2, 7, 4];
+const MELODY_PATTERN = [0, 1, 2, 4, 2, 1, 0, 3, 2, 1, 4, 2];
+
+interface GenrePreset {
+  tempo: number; // ms between notes
+  type: OscillatorType;
+  base: number; // base note (Hz)
+  scale: number[]; // semitone offsets
+  ambient: number[]; // drone frequencies
+  ambientType: OscillatorType;
+  vol: number;
+}
+
+const GENRE_PRESETS: Record<string, GenrePreset> = {
+  crystal: { tempo: 1600, type: "triangle", base: 523.25, scale: [0, 2, 4, 7, 9], ambient: [55, 82.41, 110, 164.81], ambientType: "sine", vol: 0.09 },
+  lofi: { tempo: 1050, type: "sine", base: 392, scale: [0, 3, 5, 7, 10], ambient: [49, 73.42, 98, 146.83], ambientType: "sine", vol: 0.08 },
+  arcade: { tempo: 560, type: "square", base: 523.25, scale: [0, 2, 4, 5, 7], ambient: [65.41, 98, 130.81, 196], ambientType: "triangle", vol: 0.05 },
+  forest: { tempo: 1950, type: "sine", base: 587.33, scale: [0, 2, 5, 9, 12], ambient: [43.65, 65.41, 87.31, 130.81], ambientType: "sine", vol: 0.08 },
+};
 
 export class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -14,7 +29,21 @@ export class SoundEngine {
   private ambientOscs: OscillatorNode[] = [];
   private melodyTimer: ReturnType<typeof setInterval> | null = null;
   private noteIndex = 0;
+  genre = "crystal";
   enabled = false;
+
+  setGenre(id: string) {
+    if (!GENRE_PRESETS[id]) return;
+    this.genre = id;
+    if (this.enabled && this.ctx) {
+      // Restart the loops with the new preset.
+      if (this.melodyTimer) { clearInterval(this.melodyTimer); this.melodyTimer = null; }
+      this.ambientOscs.forEach((o) => { try { o.stop(this.ctx!.currentTime + 0.3); } catch {} });
+      this.ambientOscs = [];
+      this.startAmbient(this.ctx);
+      this.startMelody(this.ctx);
+    }
+  }
 
   private getCtx(): AudioContext {
     if (!this.ctx) {
@@ -72,12 +101,13 @@ export class SoundEngine {
   }
 
   private startAmbient(ctx: AudioContext) {
-    AMBIENT_FREQS.forEach((freq, i) => {
+    const preset = GENRE_PRESETS[this.genre];
+    preset.ambient.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       const flt = ctx.createBiquadFilter();
 
-      osc.type = "sine";
+      osc.type = preset.ambientType;
       osc.frequency.value = freq;
       osc.detune.value = (i % 3 - 1) * 4;
 
@@ -99,12 +129,14 @@ export class SoundEngine {
   private startMelody(ctx: AudioContext) {
     const playNote = () => {
       if (!this.enabled || !this.reverb || !ctx) return;
-      const freq = PENTATONIC_HZ[MELODY_PATTERN[this.noteIndex % MELODY_PATTERN.length]];
+      const preset = GENRE_PRESETS[this.genre];
+      const semi = preset.scale[MELODY_PATTERN[this.noteIndex % MELODY_PATTERN.length] % preset.scale.length];
+      const freq = preset.base * Math.pow(2, semi / 12);
       this.noteIndex++;
-      this.playTone(ctx, freq * 2, "triangle", 0.09, 1.4);
+      this.playTone(ctx, freq, preset.type, preset.vol, preset.tempo / 1000 + 0.4);
     };
     playNote();
-    this.melodyTimer = setInterval(playNote, 1600);
+    this.melodyTimer = setInterval(playNote, GENRE_PRESETS[this.genre].tempo);
   }
 
   private playTone(

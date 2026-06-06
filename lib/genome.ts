@@ -14,6 +14,17 @@ export const HUMEURS = [
 
 export type Humeur = (typeof HUMEURS)[number];
 
+// Cosmetic accessories (choosable + part of rarity). Stored in the genome so a
+// saved/sold/inscribed flower keeps its outfit.
+export const HATS = ["none", "cap", "party", "tophat", "crown", "beret"] as const;
+export type Hat = (typeof HATS)[number];
+
+export const GLASSES = ["none", "sun", "thug", "heart", "round", "star"] as const;
+export type Glasses = (typeof GLASSES)[number];
+
+export const SHOES = ["sneaker", "boot", "sandal", "platform", "classic", "redhi"] as const;
+export type Shoes = (typeof SHOES)[number];
+
 export interface Genome {
   petales: number; // integer, clamped [3, 12]
   couleurA: string; // hex #rrggbb
@@ -21,6 +32,11 @@ export interface Genome {
   humeur: Humeur;
   bloc: number; // Monad block number read at germination (seed)
   seedHash: string; // hash of that block (source of organic noise)
+  // Optional cosmetics (default applied at render time / in genomeDefaut).
+  chapeau?: Hat;
+  lunettes?: Glasses;
+  chaussures?: Shoes;
+  forme?: number; // 0..6 petal-shape override (else derived from the seed)
 }
 
 export const PETALES_MIN = 3;
@@ -33,6 +49,9 @@ export const GENOME_DEFAUT: Omit<Genome, "bloc" | "seedHash"> = {
   couleurA: "#ff6ec7",
   couleurB: "#7a5cff",
   humeur: "sereine",
+  chapeau: "none",
+  lunettes: "none",
+  chaussures: "sneaker",
 };
 
 // A fixed, non-zero "garden seed" so the very first render already has organic
@@ -61,6 +80,10 @@ export const GenomeSchema = z
     humeur: z.enum(HUMEURS),
     bloc: z.number().int().nonnegative(),
     seedHash: z.string().regex(/^0x[0-9a-fA-F]+$/, "seedHash hex invalide"),
+    chapeau: z.enum(HATS).optional(),
+    lunettes: z.enum(GLASSES).optional(),
+    chaussures: z.enum(SHOES).optional(),
+    forme: z.number().int().min(0).max(6).optional(),
   })
   .strict();
 
@@ -80,6 +103,10 @@ export const DeltaSchema = z
     couleurA: HexColor.optional(),
     couleurB: HexColor.optional(),
     humeur: z.enum(HUMEURS).optional(),
+    chapeau: z.enum(HATS).optional(),
+    lunettes: z.enum(GLASSES).optional(),
+    chaussures: z.enum(SHOES).optional(),
+    forme: z.number().int().min(0).max(6).optional(),
   })
   .strict();
 
@@ -142,6 +169,18 @@ export function applyDelta(genome: Genome, delta: Delta): Genome {
   }
   if (delta.humeur !== undefined && HUMEURS.includes(delta.humeur)) {
     next.humeur = delta.humeur;
+  }
+  if (delta.chapeau !== undefined && HATS.includes(delta.chapeau)) {
+    next.chapeau = delta.chapeau;
+  }
+  if (delta.lunettes !== undefined && GLASSES.includes(delta.lunettes)) {
+    next.lunettes = delta.lunettes;
+  }
+  if (delta.chaussures !== undefined && SHOES.includes(delta.chaussures)) {
+    next.chaussures = delta.chaussures;
+  }
+  if (delta.forme !== undefined && Number.isFinite(delta.forme)) {
+    next.forme = Math.max(0, Math.min(6, Math.round(delta.forme)));
   }
 
   return next;

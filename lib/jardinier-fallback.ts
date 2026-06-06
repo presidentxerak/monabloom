@@ -3,7 +3,43 @@
 // with genome deltas, so the flower always responds without an LLM.
 
 import type { Delta } from "./genome";
-import type { Humeur } from "./genome";
+import type { Humeur, Hat, Glasses, Shoes } from "./genome";
+
+// ── Accessory + shape keywords ──────────────────────────────────────────────
+
+const HAT_WORDS: [RegExp, Hat][] = [
+  [/no hat|remove (the )?hat|bare ?head/i, "none"],
+  [/party|birthday|cone hat/i, "party"],
+  [/top ?hat|gentleman/i, "tophat"],
+  [/crown|king|queen|royal/i, "crown"],
+  [/beret|french hat|artist/i, "beret"],
+  [/\bcap\b|baseball|hat/i, "cap"],
+];
+const GLASSES_WORDS: [RegExp, Glasses][] = [
+  [/no glasses|remove (the )?glasses/i, "none"],
+  [/thug ?life|pixel/i, "thug"],
+  [/heart glasses|love glasses/i, "heart"],
+  [/round glasses|nerd|harry/i, "round"],
+  [/star glasses|star shades/i, "star"],
+  [/sunglasses|shades|sun glasses|cool/i, "sun"],
+];
+const SHOE_WORDS: [RegExp, Shoes][] = [
+  [/boots?/i, "boot"],
+  [/sandals?|flip ?flop/i, "sandal"],
+  [/platform/i, "platform"],
+  [/red (high|shoes|sneakers)|high ?tops?/i, "redhi"],
+  [/classic shoes|dress shoes|loafer/i, "classic"],
+  [/sneakers?|trainers?|kicks/i, "sneaker"],
+];
+const SHAPE_WORDS: [RegExp, number][] = [
+  [/round petal|blob petal|bubble petal/i, 1],
+  [/diamond|crystal petal|faceted/i, 2],
+  [/tube|capsule|cylinder petal/i, 3],
+  [/pointed|spiky|spike|teardrop|star petal/i, 4],
+  [/ring petal|donut petal|loop petal/i, 5],
+  [/bead petal|pearl petal/i, 6],
+  [/oval petal|classic petal|simple petal/i, 0],
+];
 
 // ── Colour keyword → hex ────────────────────────────────────────────────────
 
@@ -78,6 +114,19 @@ const REPLIES_GENERIC = [
   "Every word you speak is a drop of dew for her.",
 ];
 
+const REPLIES_DRESS = [
+  "She tries it on, delighted with her new look.",
+  "A little style suits her perfectly.",
+  "Dressed up and glowing — she twirls for you.",
+  "Her new accessory catches the light.",
+];
+
+const REPLIES_SHAPE = [
+  "Her petals reshape themselves, fluid as wax.",
+  "A new silhouette unfolds, petal by petal.",
+  "She rearranges her form to please you.",
+];
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function pick<T>(arr: T[], n: number): T {
@@ -143,6 +192,22 @@ export function ruleBasedResponse(
       matched = true;
       break;
     }
+  }
+
+  // Accessories — hats / glasses / shoes.
+  for (const [re, hat] of HAT_WORDS) {
+    if (re.test(message)) { changes.chapeau = hat; replyPool = REPLIES_DRESS; matched = true; break; }
+  }
+  for (const [re, glasses] of GLASSES_WORDS) {
+    if (re.test(message)) { changes.lunettes = glasses; replyPool = REPLIES_DRESS; matched = true; break; }
+  }
+  for (const [re, shoes] of SHOE_WORDS) {
+    if (re.test(message)) { changes.chaussures = shoes; replyPool = REPLIES_DRESS; matched = true; break; }
+  }
+
+  // Petal shape.
+  for (const [re, forme] of SHAPE_WORDS) {
+    if (re.test(message)) { changes.forme = forme; replyPool = REPLIES_SHAPE; matched = true; break; }
   }
 
   // Nothing matched → a small random colour nudge so the flower still reacts.

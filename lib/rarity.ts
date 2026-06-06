@@ -5,6 +5,9 @@ import type { Genome } from "./genome";
 import { petalStyle } from "./flower-engine";
 import { hexToRgb } from "./flower-engine";
 import { HUMEUR_LABEL } from "./humeur";
+import {
+  HAT_RARITY, GLASSES_RARITY, HAT_LABELS, GLASSES_LABELS, SHOES_LABELS,
+} from "./cosmetics";
 
 export type RarityTier =
   | "Common"
@@ -71,24 +74,30 @@ export function computeRarity(genome: Genome): Rarity {
   const humeurScore = HUMEUR_WEIGHTS[genome.humeur] ?? 10;
 
   // Complementary colours (gap near 180°) read as more striking → rarer.
-  const colorScore = (hueGap(genome.couleurA, genome.couleurB) / 180) * 20;
+  const colorScore = (hueGap(genome.couleurA, genome.couleurB) / 180) * 16;
+
+  // Accessories add rarity.
+  const hat = genome.chapeau ?? "none";
+  const glasses = genome.lunettes ?? "none";
+  const cosmeticScore = (HAT_RARITY[hat] + GLASSES_RARITY[glasses]) * 0.5;
 
   const score = Math.min(
     100,
-    Math.round(styleScore + petalScore + humeurScore + colorScore),
+    Math.round(styleScore + petalScore + humeurScore + colorScore + cosmeticScore),
   );
 
   const tier = TIERS.find((t) => score >= t.min)!;
 
-  return {
-    tier: tier.tier,
-    score,
-    color: tier.color,
-    traits: [
-      { label: "Shape", value: STYLE_NAMES[style] },
-      { label: "Petals", value: String(genome.petales) },
-      { label: "Mood", value: HUMEUR_LABEL[genome.humeur] },
-      { label: "Contrast", value: `${Math.round(hueGap(genome.couleurA, genome.couleurB))}°` },
-    ],
-  };
+  const traits = [
+    { label: "Shape", value: STYLE_NAMES[style] },
+    { label: "Petals", value: String(genome.petales) },
+    { label: "Mood", value: HUMEUR_LABEL[genome.humeur] },
+    { label: "Contrast", value: `${Math.round(hueGap(genome.couleurA, genome.couleurB))}°` },
+  ];
+  if (hat !== "none") traits.push({ label: "Hat", value: HAT_LABELS[hat] });
+  if (glasses !== "none") traits.push({ label: "Glasses", value: GLASSES_LABELS[glasses] });
+  if (genome.chaussures && genome.chaussures !== "sneaker")
+    traits.push({ label: "Shoes", value: SHOES_LABELS[genome.chaussures] });
+
+  return { tier: tier.tier, score, color: tier.color, traits };
 }
