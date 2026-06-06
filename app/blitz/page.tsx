@@ -160,6 +160,17 @@ export default function BlitzGardenPage() {
           </form>
         </aside>
       </div>
+
+      {/* Mobile: sticky Collect for the selected flower, above the bottom nav. */}
+      {selected && (
+        <button
+          onClick={() => collect(selected)}
+          className="btn-bump fixed inset-x-3 z-30 rounded-full py-3 text-sm font-semibold shadow-lg sm:hidden"
+          style={{ bottom: "calc(58px + env(safe-area-inset-bottom))" }}
+        >
+          Collect {nomPoetique(selected.genome.seedHash)}
+        </button>
+      )}
     </div>
   );
 }

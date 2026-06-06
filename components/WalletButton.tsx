@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   connect,
   reconnect,
@@ -35,8 +36,11 @@ export default function WalletButton({
   const [chainId, setChainId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const cbRef = useRef(onChange);
   cbRef.current = onChange;
+
+  useEffect(() => setMounted(true), []);
 
   const set = (acc: string | null) => {
     setWallet(acc);
@@ -157,9 +161,9 @@ export default function WalletButton({
         </button>
       )}
 
-      {open && wallet && (
+      {open && wallet && mounted && createPortal(
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/35 p-3 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/35 p-3 backdrop-blur-sm sm:items-center"
           onClick={() => setOpen(false)}
         >
           <div
@@ -239,7 +243,8 @@ export default function WalletButton({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

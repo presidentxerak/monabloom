@@ -137,12 +137,12 @@ export default function FlowerCanvas({
         const drawHat = (R: number, type: string) => {
           if (!type || type === "none") return;
           if (type === "cap") {
-            // Rounded crown on the head top + a peak that overlaps its front rim
-            // (same red), so it reads as one cap instead of a floating slot.
+            // Dome hugging the top of the head, bottom rim at the brow, with a peak
+            // projecting forward from that rim (same red) so it reads as one cap.
             setMat([230, 70, 90]);
-            p.push(); p.translate(0, -R * 0.72, 0); p.scale(1.18, 0.86, 1.18); p.sphere(R * 0.6, 24, 18); p.pop();
+            p.push(); p.translate(0, -R * 0.7, 0); p.scale(1.2, 0.74, 1.2); p.sphere(R * 0.62, 24, 18); p.pop();
             setMat([230, 70, 90]);
-            p.push(); p.translate(0, -R * 0.3, R * 0.82); p.rotateX(0.52); p.ellipsoid(R * 0.54, R * 0.09, R * 0.5, 20, 8); p.pop();
+            p.push(); p.translate(0, -R * 0.26, R * 0.86); p.rotateX(0.42); p.ellipsoid(R * 0.52, R * 0.08, R * 0.46, 20, 8); p.pop();
           } else if (type === "party") {
             // Cone flipped so the apex points up; base rests on the head top.
             setMat([232, 92, 200]);
