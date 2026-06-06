@@ -3,6 +3,7 @@
 // to match what the player asked. Unrecognised input changes nothing.
 
 import type { Delta } from "./genome";
+import { HATS, GLASSES, SHOES, HUMEURS } from "./genome";
 import type { Humeur, Hat, Glasses, Shoes } from "./genome";
 
 // ── Colours (specific combos first, word-bounded) ───────────────────────────
@@ -91,9 +92,9 @@ const R_MOOD = ["Her soul shifts — I feel her vibrate differently.", "A new em
 const R_DRESS = ["She tries it on, delighted with her new look.", "A little style suits her perfectly.", "Dressed up and glowing, she twirls for you."];
 const R_SHAPE = ["Her petals reshape themselves, fluid as wax.", "A new silhouette unfolds, petal by petal."];
 const R_NONE = [
-  "Tell me a colour, a mood, a hat, glasses, shoes, or a petal shape — and I'll make it so.",
-  "I'm listening. Try \"make her blue\", \"give her sunglasses\", or \"pointed petals\".",
-  "Whisper a wish — a colour, an emotion, an accessory — and she'll answer.",
+  "Try \"make her blue\", \"change petals\", \"change the shape\", or \"surprise me\".",
+  "I'm listening. Say a colour, a mood, a hat, glasses, shoes, or \"randomize everything\".",
+  "Whisper a wish — \"give her sunglasses\", \"more petals\", \"diamond petals\" — and she'll answer.",
 ];
 
 function pick<T>(arr: T[], n: number): T { return arr[Math.abs(n) % arr.length]; }
@@ -107,6 +108,12 @@ const RANDOM_PAIRS: [string, string][] = [
   ["#ff6ec7", "#7a5cff"], ["#00e5d0", "#ff5b9a"], ["#ffd000", "#ff5400"],
   ["#7bd1ff", "#b06bff"], ["#ff3aa0", "#3ad0ff"], ["#9be000", "#ff2e88"],
 ];
+
+// "change / new / different / randomize / surprise … <target>" → give a fresh
+// random value for that target, so vague commands always do something.
+const CHANGE = /\b(change|swap|new|another|different|randomi[sz]e|surprise|vary|switch|give|make|set|turn|put|remix)\b/i;
+const ri = (n: number) => Math.floor(Math.random() * n);
+function prand<T>(a: readonly T[]): T { return a[ri(a.length)]; }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
@@ -155,6 +162,24 @@ export function ruleBasedResponse(message: string): { reply: string; changes: De
 
   // Petal shape
   for (const [re, forme] of SHAPE_WORDS) { if (re.test(message)) { changes.forme = forme; bump(R_SHAPE, 4); break; } }
+
+  // Intent layer — "change/new/different/randomize <target>" gives a fresh value
+  // for that target. Runs only when no specific value was named above.
+  if (!matched && CHANGE.test(message)) {
+    if (/shape|form/i.test(message)) { changes.forme = ri(7); bump(R_SHAPE, 4); }
+    else if (/petals?|bloom|flower/i.test(message)) { changes.petales = 3 + ri(10); bump(R_PETALS_MORE, 2); }
+    else if (/colou?rs?|hue|shade|tint/i.test(message)) { const [a, b] = prand(RANDOM_PAIRS); changes.couleurA = a; changes.couleurB = b; bump(R_COLOR, 1); }
+    else if (/hats?|cap|headwear/i.test(message)) { changes.chapeau = prand(HATS.filter((h) => h !== "none")); bump(R_DRESS, 4); }
+    else if (/glasses|shades|sunglasses|eyewear/i.test(message)) { changes.lunettes = prand(GLASSES.filter((g) => g !== "none")); bump(R_DRESS, 4); }
+    else if (/shoes|sneakers|kicks|boots|footwear/i.test(message)) { changes.chaussures = prand(SHOES); bump(R_DRESS, 4); }
+    else if (/moods?|emotion|feeling|expression|face|vibe/i.test(message)) { changes.humeur = prand(HUMEURS); bump(R_MOOD, 3); }
+    else if (/everything|all of|surprise|random|anything|look|outfit|style/i.test(message)) {
+      const [a, b] = prand(RANDOM_PAIRS);
+      changes.couleurA = a; changes.couleurB = b;
+      changes.petales = 3 + ri(10); changes.humeur = prand(HUMEURS); changes.forme = ri(7);
+      bump(R_COLOR, 1);
+    }
+  }
 
   return { reply: pick(reply, seed), changes: matched ? changes : {} };
 }

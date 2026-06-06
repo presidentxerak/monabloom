@@ -43,4 +43,20 @@ describe("ruleBasedResponse — commands map to exact changes", () => {
   it("'what' does not trigger a hat", () => {
     expect(ruleBasedResponse("what color is she?").changes.chapeau).toBeUndefined();
   });
+
+  it("vague 'change <target>' commands always do something", () => {
+    expect(ruleBasedResponse("change petals").changes.petales).toBeDefined();
+
+    const shape = ruleBasedResponse("change petals shape").changes;
+    expect(shape.forme).toBeGreaterThanOrEqual(0);
+    expect(shape.forme).toBeLessThanOrEqual(6);
+
+    expect(ruleBasedResponse("change the shape").changes.forme).toBeDefined();
+    expect(ruleBasedResponse("randomize the colors").changes.couleurA).toBeDefined();
+    expect(ruleBasedResponse("change her mood").changes.humeur).toBeDefined();
+
+    const all = ruleBasedResponse("surprise me").changes;
+    expect(all.couleurA).toBeDefined();
+    expect(all.humeur).toBeDefined();
+  });
 });
