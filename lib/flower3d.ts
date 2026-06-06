@@ -86,9 +86,9 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number, dance
   const drawHat = (type: string) => {
     if (!type || type === "none") return;
     if (type === "cap") {
-      setMat([230, 70, 90]); p.push(); p.translate(0, -R * 0.74, 0); p.scale(1.16, 0.82, 1.16); p.sphere(R * 0.58, 22, 16); p.pop();
-      // Visor: projects forward from the brow like a real cap peak (not an embedded slot).
-      setMat([205, 52, 72]); p.push(); p.translate(0, -R * 0.34, R * 0.9); p.rotateX(0.36); p.ellipsoid(R * 0.5, R * 0.07, R * 0.44, 18, 8); p.pop();
+      setMat([230, 70, 90]); p.push(); p.translate(0, -R * 0.72, 0); p.scale(1.18, 0.86, 1.18); p.sphere(R * 0.6, 24, 18); p.pop();
+      // Peak: same red as the crown and overlapping its front rim so it reads as one cap (not a floating slot).
+      setMat([230, 70, 90]); p.push(); p.translate(0, -R * 0.3, R * 0.82); p.rotateX(0.52); p.ellipsoid(R * 0.54, R * 0.09, R * 0.5, 20, 8); p.pop();
     } else if (type === "party") {
       setMat([232, 92, 200]); p.push(); p.translate(0, -R * 1.5, 0); p.rotateZ(Math.PI); p.cone(R * 0.42, R * 1.0, 20, 1, true); p.pop(); ball(0, -R * 2.02, 0, R * 0.11, [255, 240, 120]);
     } else if (type === "tophat") {
@@ -103,19 +103,49 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number, dance
 
   const drawGlasses = (type: string) => {
     if (!type || type === "none") return;
-    const ey = -R * 0.05, ex = R * 0.3, lensZ = surfZ(ex, ey, R * 0.05), bridgeZ = surfZ(0, ey, R * 0.05);
+    const ey = -R * 0.05, ex = R * 0.3;
+    const lensZ = surfZ(ex, ey, R * 0.06);
     const dark: RGB = [22, 20, 30];
-    const bridge = (col: RGB, w: number) => { p.push(); p.translate(0, ey, bridgeZ); setMat(col, 120, 40); p.box(w, R * 0.04, R * 0.05); p.pop(); };
+
+    // A thin wire bridge that connects the lenses' inner edges at lens depth, so
+    // it never juts out past them (the head is a sphere — its centre is closest).
+    const bridge = (col: RGB, innerX: number) => {
+      p.push(); p.translate(0, ey - R * 0.02, lensZ); setMat(col, 120, 40);
+      p.rotateZ(Math.PI / 2); p.cylinder(R * 0.02, innerX * 2, 8, 1); p.pop();
+    };
+    // Filled flat polygon (triangle fan from its centre) facing the camera.
+    const fan = (cx: number, cy: number, pts: [number, number][]) => {
+      p.push(); p.translate(cx, cy, lensZ); p.beginShape(p.TRIANGLES);
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        p.vertex(0, 0, 0); p.vertex(a[0], a[1], 0); p.vertex(b[0], b[1], 0);
+      }
+      p.endShape(); p.pop();
+    };
+
     if (type === "sun" || type === "thug") {
-      const box = type === "thug";
-      for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat(dark, 220, 90); if (box) p.box(R * 0.3, R * 0.2, R * 0.05); else p.ellipsoid(R * 0.17, R * 0.13, R * 0.04, 16, 12); p.pop(); }
-      bridge(dark, R * 0.2);
+      const isBox = type === "thug";
+      for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat(dark, 220, 90); if (isBox) p.box(R * 0.3, R * 0.2, R * 0.05); else p.ellipsoid(R * 0.17, R * 0.13, R * 0.04, 16, 12); p.pop(); }
+      bridge(dark, isBox ? R * 0.15 : R * 0.13);
     } else if (type === "round") {
-      for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat(dark); p.torus(R * 0.14, R * 0.028, 18, 10); p.pop(); } bridge(dark, R * 0.14);
+      for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat(dark); p.torus(R * 0.14, R * 0.028, 20, 12); p.pop(); }
+      bridge(dark, R * 0.13);
     } else if (type === "heart") {
-      for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat([255, 80, 130], 160, 50); p.torus(R * 0.14, R * 0.04, 18, 10); p.pop(); } bridge([255, 80, 130], R * 0.12);
+      // Two round lobes + a downward point = a clear 3D heart per lens.
+      const col: RGB = [255, 80, 130];
+      for (const sx of [-1, 1]) {
+        setMat(col, 160, 50);
+        for (const lobe of [-1, 1]) { p.push(); p.translate(sx * ex + lobe * R * 0.06, ey - R * 0.05, lensZ); p.sphere(R * 0.07, 12, 10); p.pop(); }
+        p.push(); p.translate(sx * ex, ey + R * 0.04, lensZ); p.cone(R * 0.12, R * 0.18, 16, 1, true); p.pop();
+      }
+      bridge(col, R * 0.12);
     } else if (type === "star") {
-      for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat([255, 214, 70], 180, 60); p.push(); p.box(R * 0.26, R * 0.06, R * 0.05); p.pop(); p.push(); p.box(R * 0.06, R * 0.26, R * 0.05); p.pop(); p.pop(); } bridge([255, 214, 70], R * 0.12);
+      // A real 5-point star (flat, facing forward) per lens — not a plus sign.
+      const col: RGB = [255, 206, 70];
+      const pts: [number, number][] = [];
+      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + (i / 10) * Math.PI * 2; const rr = i % 2 === 0 ? R * 0.17 : R * 0.074; pts.push([Math.cos(a) * rr, Math.sin(a) * rr]); }
+      for (const sx of [-1, 1]) { setMat(col, 180, 60); fan(sx * ex, ey, pts); }
+      bridge(col, R * 0.12);
     }
   };
 
