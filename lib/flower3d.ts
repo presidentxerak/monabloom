@@ -198,7 +198,7 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number, dance
   if (lod >= 1) {
     p.push();
     p.translate(0, bobY * R, 0);
-    p.push(); p.translate(0, -R * 0.1, R * 0.35); p.rotateZ(spin);
+    p.push(); p.translate(0, -R * 0.1, R * 0.6); p.rotateZ(spin);
     for (let i = 0; i < n; i++) {
       const ang = (i / n) * Math.PI * 2; const v = vars[i % 12];
       setMat(tint(lerpRgb(a, b, i / Math.max(1, n)), 0.06), 70, 12);
@@ -222,7 +222,7 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number, dance
 
   // Petals (just in front of the body).
   p.push();
-  p.translate(0, -R * 0.1, R * 0.35);
+  p.translate(0, -R * 0.1, R * 0.6);
   p.rotateZ(spin);
   for (let i = 0; i < n; i++) {
     const ang = (i / n) * Math.PI * 2; const v = vars[i % 12];

@@ -371,7 +371,7 @@ export default function FlowerCanvas({
           // Petals just in front of the body.
           const n = Math.max(1, Math.round(petalesShown));
           p.push();
-          p.translate(0, -R * 0.1, R * 0.35);
+          p.translate(0, -R * 0.1, R * 0.6);
           p.rotateZ(petalSpin);
           for (let i = 0; i < n; i++) {
             const ang = (i / n) * Math.PI * 2; const v = vars[i % 12];

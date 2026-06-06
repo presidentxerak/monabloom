@@ -105,8 +105,13 @@ export default function Chat({
   return (
     <div className="glass flex h-full flex-col rounded-3xl">
       {/* Gardener profile (full 3D) */}
-      <div className="flex items-center gap-2.5 border-b border-black/5 px-4 py-2.5">
-        <GardenerAvatar size={44} />
+      <div className="flex items-center gap-3 border-b border-black/5 px-4 py-2.5">
+        <div
+          className="flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-pink-200"
+          style={{ width: 64, height: 64, background: "#ffe3ef" }}
+        >
+          <GardenerAvatar size={64} />
+        </div>
         <div className="flex flex-col leading-tight">
           <span className="font-display text-sm text-zinc-700">The Gardener</span>
           <span className="text-[10px] text-zinc-400">{aiLabel ?? "tending the garden…"}</span>
