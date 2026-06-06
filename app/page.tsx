@@ -12,7 +12,7 @@ import MusicPlayer from "@/components/MusicPlayer";
 import { GenomeSchema, genomeDefaut, type Genome } from "@/lib/genome";
 import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
 import { addOwnedGenome } from "@/lib/collection";
-import { DANCES } from "@/lib/cosmetics";
+import { DANCES, GENRE_DANCE } from "@/lib/cosmetics";
 import { computeRarity } from "@/lib/rarity";
 import { tokenLabel, rank } from "@/lib/identity";
 import { nomPoetique } from "@/lib/flower-random";
@@ -98,6 +98,13 @@ export default function Home() {
     note(`Saved "${flower.name}" ${identity.token} to The Garden!`, 3200);
   }
 
+  function handleGenre(id: string) {
+    // Beat-y genres make her dance; calm genres settle her back to idle.
+    const d = GENRE_DANCE[id] ?? 0;
+    setDance(d);
+    if (d > 0) note(`Dancing to ${id} — ${DANCES[d].name}!`);
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col gap-3 p-3 lg:h-screen lg:flex-row lg:overflow-hidden lg:gap-4 lg:p-4">
       {/* Flower stage */}
@@ -163,7 +170,7 @@ export default function Home() {
           onClose={() => setWardrobe(null)}
         />
       )}
-      {music && <MusicPlayer onClose={() => setMusic(false)} />}
+      {music && <MusicPlayer onClose={() => setMusic(false)} onGenre={handleGenre} />}
     </main>
   );
 }

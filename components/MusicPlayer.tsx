@@ -4,7 +4,13 @@ import { useState } from "react";
 import { getSoundEngine } from "@/lib/sound";
 import { GENRES } from "@/lib/cosmetics";
 
-export default function MusicPlayer({ onClose }: { onClose: () => void }) {
+export default function MusicPlayer({
+  onClose,
+  onGenre,
+}: {
+  onClose: () => void;
+  onGenre?: (id: string) => void;
+}) {
   const engine = getSoundEngine();
   const [genre, setGenre] = useState(engine.genre);
   const [playing, setPlaying] = useState(engine.enabled);
@@ -16,6 +22,7 @@ export default function MusicPlayer({ onClose }: { onClose: () => void }) {
       engine.enable();
       setPlaying(true);
     }
+    onGenre?.(id);
   }
 
   function toggle() {

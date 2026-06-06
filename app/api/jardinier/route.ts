@@ -1,10 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import {
   GenomeSchema,
   applyDelta,
   genomeDefaut,
-  parseJardinierReply,
   type Genome,
 } from "@/lib/genome";
 import { buildSystemPrompt } from "@/lib/jardinier-prompt";
@@ -14,10 +12,10 @@ import {
   lireGrainePourGermination,
 } from "@/lib/monad";
 import { ruleBasedResponse } from "@/lib/jardinier-fallback";
+import { generateCascade } from "@/lib/llm";
 
 export const runtime = "nodejs";
 
-const MODEL = "claude-sonnet-4-6";
 const MAX_HISTORY = 12;
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 const PLACEHOLDER_HASH = "0x" + "0".repeat(64);
@@ -115,46 +113,21 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Chat branch. ──
-  // No API key: the rule-based gardener handles everything.
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return fallbackResponse(genome, userMsg);
-
+  // ── Chat branch — LLM cascade (Anthropic → Cerebras → Groq → Gemini →
+  //    OpenRouter → Mistral), then the rule-based gardener as a safety net. ──
+  let result = null;
   try {
-    const anthropic = new Anthropic({ apiKey });
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 400,
-      system: buildSystemPrompt(genome),
-      messages: history.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    });
-
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("")
-      .trim();
-
-    const parsed = parseJardinierReply(text);
-    if (!parsed) {
-      // LLM output unusable → rule-based fallback so the flower STILL changes.
-      console.warn("[jardinier] unparseable LLM output:", text.slice(0, 200));
-      return fallbackResponse(genome, userMsg);
-    }
-
-    // Apply the delta server-side — the server stays the authority.
-    const nextGenome = applyDelta(genome, parsed.changes);
-    return NextResponse.json({
-      reply: parsed.reply,
-      changes: parsed.changes,
-      genome: nextGenome,
-    });
+    result = await generateCascade(buildSystemPrompt(genome), history);
   } catch (err) {
-    // LLM call failed (bad key, network, model) → rule-based fallback.
-    console.error("[jardinier] LLM call failed, using fallback:", err);
-    return fallbackResponse(genome, userMsg);
+    console.error("[jardinier] cascade error:", err);
   }
+  if (!result) return fallbackResponse(genome, userMsg);
+
+  // Apply the delta server-side — the server stays the authority.
+  const nextGenome = applyDelta(genome, result.changes);
+  return NextResponse.json({
+    reply: result.reply,
+    changes: result.changes,
+    genome: nextGenome,
+  });
 }

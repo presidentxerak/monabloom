@@ -57,6 +57,19 @@ export interface GenreMeta { id: string; label: string; }
 export const GENRES: GenreMeta[] = [
   { id: "crystal", label: "Crystal" },
   { id: "lofi", label: "Lo-fi" },
-  { id: "arcade", label: "Arcade" },
   { id: "forest", label: "Forest" },
+  { id: "arcade", label: "Arcade" },
+  { id: "techno", label: "Techno" },
+  { id: "chip", label: "8-Bit" },
 ];
+
+// Picking a beat-y genre makes the character dance to it (dance index into
+// DANCES). Calm genres leave it idle.
+export const GENRE_DANCE: Record<string, number> = {
+  crystal: 0,
+  lofi: 0,
+  forest: 0,
+  arcade: 2, // Twist
+  techno: 5, // Spin
+  chip: 3, // Jump
+};

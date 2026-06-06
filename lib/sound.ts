@@ -13,6 +13,7 @@ interface GenrePreset {
   ambient: number[]; // drone frequencies
   ambientType: OscillatorType;
   vol: number;
+  beat?: boolean; // play a kick on every note (driving genres)
 }
 
 const GENRE_PRESETS: Record<string, GenrePreset> = {
@@ -20,6 +21,8 @@ const GENRE_PRESETS: Record<string, GenrePreset> = {
   lofi: { tempo: 1050, type: "sine", base: 392, scale: [0, 3, 5, 7, 10], ambient: [49, 73.42, 98, 146.83], ambientType: "sine", vol: 0.08 },
   arcade: { tempo: 560, type: "square", base: 523.25, scale: [0, 2, 4, 5, 7], ambient: [65.41, 98, 130.81, 196], ambientType: "triangle", vol: 0.05 },
   forest: { tempo: 1950, type: "sine", base: 587.33, scale: [0, 2, 5, 9, 12], ambient: [43.65, 65.41, 87.31, 130.81], ambientType: "sine", vol: 0.08 },
+  techno: { tempo: 300, type: "sawtooth", base: 261.63, scale: [0, 3, 5, 7, 10], ambient: [49, 98, 49, 98], ambientType: "sawtooth", vol: 0.045, beat: true },
+  chip: { tempo: 220, type: "square", base: 523.25, scale: [0, 2, 4, 7, 9, 12], ambient: [65.41, 130.81, 98, 196], ambientType: "square", vol: 0.045, beat: true },
 };
 
 export class SoundEngine {
@@ -133,10 +136,28 @@ export class SoundEngine {
       const semi = preset.scale[MELODY_PATTERN[this.noteIndex % MELODY_PATTERN.length] % preset.scale.length];
       const freq = preset.base * Math.pow(2, semi / 12);
       this.noteIndex++;
-      this.playTone(ctx, freq, preset.type, preset.vol, preset.tempo / 1000 + 0.4);
+      this.playTone(ctx, freq, preset.type, preset.vol, preset.tempo / 1000 + 0.2);
+      if (preset.beat) this.playKick(ctx);
     };
     playNote();
     this.melodyTimer = setInterval(playNote, GENRE_PRESETS[this.genre].tempo);
+  }
+
+  /** A short punchy kick drum for the driving genres (dry, straight to master). */
+  private playKick(ctx: AudioContext) {
+    if (!this.master) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(42, now + 0.12);
+    gain.gain.setValueAtTime(0.32, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    osc.connect(gain);
+    gain.connect(this.master);
+    osc.start(now);
+    osc.stop(now + 0.2);
   }
 
   private playTone(
