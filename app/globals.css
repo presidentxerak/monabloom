@@ -3,69 +3,48 @@
 @tailwind utilities;
 
 :root {
-  /* Bloom colours — updated live from the current genome so the whole UI
-     breathes with the flower. */
+  /* Bloom colours — updated live from the current genome. */
   --bloom-a: #ff6ec7;
   --bloom-b: #7a5cff;
+  /* Solid pastel page background, derived from the flower. */
+  --bg-pastel: #efe9f7;
 }
 
 html,
 body {
-  background: #050208;
+  background: var(--bg-pastel);
+  transition: background 0.8s ease;
 }
 
-/* Subtle film grain overlay across the whole page. */
-.grain {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Clean brand wordmark (no neon). */
+.brand-title {
+  color: #2b2535;
+  letter-spacing: 0.28em;
+  font-weight: 400;
 }
-
-/* Soft radial bloom glow tinted by the live genome colours. */
-.bloom-aura {
-  background: radial-gradient(
-    circle at 50% 45%,
-    var(--bloom-a) 0%,
-    transparent 55%
-  );
-  opacity: 0.1;
-}
-
-.neon-title {
+.brand-dot {
   color: var(--bloom-a);
-  text-shadow:
-    0 0 10px var(--bloom-a),
-    0 0 28px var(--bloom-b);
 }
 
-.bg-void {
-  background: #050208;
+/* Pill link / button on the pastel theme. */
+.pill {
+  border: 1px solid rgba(40, 30, 60, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  color: #3a3346;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.pill:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(40, 30, 60, 0.22);
 }
 
 .sound-btn {
-  transition: box-shadow 0.3s ease, transform 0.15s ease, color 0.3s ease;
-}
-.sound-btn:hover {
-  transform: scale(1.08);
+  transition: background 0.2s ease, transform 0.15s ease, color 0.3s ease;
 }
 
-/* Garden link — subtle outline that lights up on hover. */
-.garden-link {
-  border-color: color-mix(in srgb, var(--bloom-b) 35%, transparent);
-  color: color-mix(in srgb, var(--bloom-a) 80%, white 20%);
-  background: color-mix(in srgb, var(--bloom-b) 8%, transparent);
-}
-.garden-link:hover {
-  border-color: var(--bloom-a);
-  background: color-mix(in srgb, var(--bloom-a) 14%, transparent);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--bloom-a) 40%, transparent);
-}
-
-/* Softer, slower grain for a calmer, more minimal stage. */
-.bloom-aura {
-  transition: background 0.8s ease;
+/* Light glass chat card. */
+.glass {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(40, 30, 60, 0.1);
+  backdrop-filter: blur(10px);
 }

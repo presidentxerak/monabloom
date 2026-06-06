@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json(
       {
-        reply: "Redis-moi ton envie ? Le jardin t'écoute.",
+        reply: "Tell me your wish again? The garden is listening.",
         changes: {},
         genome: genomeDefaut(),
       },
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     try {
       const result = await inscrireGenome(genome, addressMatch[0]);
       return NextResponse.json({
-        reply: "Je la plante… Elle est désormais inscrite pour l'éternité. 🌱",
+        reply: "Planting it… She is now inscribed forever.",
         changes: {},
         genome,
         txHash: result.txHash,
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           reply:
-            "La terre n'a pas voulu d'elle cette fois… Vérifie ton adresse et réessaie.",
+            "The soil refused her this time… Check your address and try again.",
           changes: {},
           genome,
         },

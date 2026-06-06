@@ -4,13 +4,14 @@
 import type { Genome } from "./genome";
 import { petalStyle } from "./flower-engine";
 import { hexToRgb } from "./flower-engine";
+import { HUMEUR_LABEL } from "./humeur";
 
 export type RarityTier =
-  | "Commune"
-  | "Peu commune"
+  | "Common"
+  | "Uncommon"
   | "Rare"
-  | "Épique"
-  | "Légendaire";
+  | "Epic"
+  | "Legendary";
 
 export interface Rarity {
   tier: RarityTier;
@@ -19,7 +20,7 @@ export interface Rarity {
   traits: { label: string; value: string }[];
 }
 
-const STYLE_NAMES = ["Classique", "Étoile", "Tulipe", "Lancéolé", "Ondulé"];
+const STYLE_NAMES = ["Classic", "Star", "Tulip", "Blade", "Ruffled"];
 // Lower frequency => rarer. Ondulé/Lancéolé are the showy ones.
 const STYLE_WEIGHTS = [10, 25, 22, 30, 35];
 
@@ -32,11 +33,11 @@ const HUMEUR_WEIGHTS: Record<string, number> = {
 };
 
 const TIERS: { tier: RarityTier; min: number; color: string }[] = [
-  { tier: "Légendaire", min: 82, color: "#ffd34d" },
-  { tier: "Épique", min: 64, color: "#c46bff" },
-  { tier: "Rare", min: 44, color: "#4db8ff" },
-  { tier: "Peu commune", min: 24, color: "#4dffa6" },
-  { tier: "Commune", min: 0, color: "#9aa0ad" },
+  { tier: "Legendary", min: 82, color: "#e0a400" },
+  { tier: "Epic", min: 64, color: "#a64bff" },
+  { tier: "Rare", min: 44, color: "#1f8fff" },
+  { tier: "Uncommon", min: 24, color: "#16b572" },
+  { tier: "Common", min: 0, color: "#7a8090" },
 ];
 
 /** Hue (0–360) of an #rrggbb colour. */
@@ -84,10 +85,10 @@ export function computeRarity(genome: Genome): Rarity {
     score,
     color: tier.color,
     traits: [
-      { label: "Forme", value: STYLE_NAMES[style] },
-      { label: "Pétales", value: String(genome.petales) },
-      { label: "Humeur", value: genome.humeur },
-      { label: "Contraste", value: `${Math.round(hueGap(genome.couleurA, genome.couleurB))}°` },
+      { label: "Shape", value: STYLE_NAMES[style] },
+      { label: "Petals", value: String(genome.petales) },
+      { label: "Mood", value: HUMEUR_LABEL[genome.humeur] },
+      { label: "Contrast", value: `${Math.round(hueGap(genome.couleurA, genome.couleurB))}°` },
     ],
   };
 }

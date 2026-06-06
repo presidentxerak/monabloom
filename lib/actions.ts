@@ -72,10 +72,10 @@ export interface FeedMeta {
 }
 
 export const FEED_ACTIONS: FeedMeta[] = [
-  { id: "eau", emoji: "💧", label: "Eau", reply: "Elle boit… et s'épanouit d'un pétale." },
-  { id: "engrais", emoji: "🌱", label: "Engrais", reply: "Ses couleurs se gorgent de sève." },
-  { id: "soleil", emoji: "☀️", label: "Soleil", reply: "La lumière réchauffe ses teintes." },
-  { id: "pouvoir", emoji: "✨", label: "Pouvoir", reply: "Une énergie espiègle la traverse." },
+  { id: "eau", emoji: "💧", label: "Water", reply: "She drinks… and unfurls a new petal." },
+  { id: "engrais", emoji: "🌱", label: "Fertilizer", reply: "Her colours swell with sap." },
+  { id: "soleil", emoji: "☀️", label: "Sun", reply: "The light warms her hues." },
+  { id: "pouvoir", emoji: "✨", label: "Power", reply: "A playful energy runs through her." },
 ];
 
 /** Apply a feed action, returning a new genome. */

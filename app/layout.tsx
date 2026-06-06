@@ -10,9 +10,9 @@ const display = DotGothic16({
 });
 
 export const metadata: Metadata = {
-  title: "Flowermon — fais germer ta fleur",
+  title: "Flowermon — grow your flower",
   description:
-    "Crée, collecte et échange des fleurs génératives uniques sur Monad testnet.",
+    "Create, collect and trade unique generative 3D flowers on Monad testnet.",
 };
 
 export default function RootLayout({
@@ -21,11 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={display.variable}>
-      <body className="min-h-screen bg-void text-zinc-100 antialiased">
-        <div className="grain" aria-hidden />
-        {children}
-      </body>
+    <html lang="en" className={display.variable}>
+      <body className="min-h-screen text-zinc-800 antialiased">{children}</body>
     </html>
   );
 }

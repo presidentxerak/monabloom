@@ -1,83 +1,81 @@
-// Rule-based Jardinier — used when ANTHROPIC_API_KEY is absent.
-// Parses French keywords from the user message and produces poetic replies
-// with genome deltas, so the flower still responds without an LLM.
+// Rule-based Gardener — used when ANTHROPIC_API_KEY is absent or the LLM fails.
+// Parses English keywords from the user message and produces poetic replies
+// with genome deltas, so the flower always responds without an LLM.
 
 import type { Delta } from "./genome";
-import { HUMEURS, type Humeur } from "./genome";
+import type { Humeur } from "./genome";
 
-// ── Color keyword → hex ────────────────────────────────────────────────────
+// ── Colour keyword → hex ────────────────────────────────────────────────────
 
 const COLOR_WORDS: [RegExp, string, "a" | "b" | "both"][] = [
-  [/rouge/i, "#ff2244", "a"],
-  [/rose\s+vif|rose\s+fonce/i, "#ff44aa", "a"],
-  [/rose/i, "#ff88cc", "a"],
-  [/magenta|fuchsia/i, "#ff00cc", "a"],
-  [/violet|pourpre/i, "#9933ff", "both"],
-  [/indigo/i, "#6644ff", "b"],
-  [/bleu\s+ciel|bleu\s+clair/i, "#44aaff", "b"],
-  [/bleu\s+nuit|bleu\s+profond/i, "#001eff", "b"],
-  [/bleu/i, "#2244ff", "b"],
-  [/cyan|turquoise|aqua/i, "#00ffee", "a"],
-  [/vert\s+for[eê]t|vert\s+sombre/i, "#008800", "a"],
-  [/vert\s+lime/i, "#aaff00", "a"],
-  [/vert/i, "#22ff88", "a"],
-  [/jaune\s+or|dor[ée]|or\b/i, "#ffcc00", "a"],
-  [/jaune/i, "#ffee00", "a"],
-  [/orange/i, "#ff8800", "a"],
-  [/blanc|lumineux|lumiere|lumière/i, "#ffffff", "both"],
-  [/noir|sombre|nuit/i, "#111133", "both"],
-  [/argent|silver/i, "#ccccff", "b"],
-  [/arc.en.ciel|rainbow/i, "#ff4488", "a"],
+  [/\bred\b|crimson|scarlet/i, "#ff2244", "a"],
+  [/hot\s*pink|magenta|fuchsia/i, "#ff00cc", "a"],
+  [/\bpink\b|rose/i, "#ff88cc", "a"],
+  [/purple|violet|indigo/i, "#9933ff", "both"],
+  [/sky\s*blue|light\s*blue/i, "#44aaff", "b"],
+  [/navy|deep\s*blue|midnight/i, "#001eff", "b"],
+  [/\bblue\b/i, "#2244ff", "b"],
+  [/cyan|turquoise|teal|aqua/i, "#00ffee", "a"],
+  [/lime/i, "#aaff00", "a"],
+  [/forest|dark\s*green/i, "#008800", "a"],
+  [/\bgreen\b/i, "#22ff88", "a"],
+  [/gold|golden/i, "#ffcc00", "a"],
+  [/\byellow\b/i, "#ffee00", "a"],
+  [/orange|amber/i, "#ff8800", "a"],
+  [/white|bright|light/i, "#ffffff", "both"],
+  [/black|dark|night/i, "#111133", "both"],
+  [/silver/i, "#ccccff", "b"],
+  [/rainbow/i, "#ff4488", "a"],
 ];
 
-// ── Mood keyword ────────────────────────────────────────────────────────────
+// ── Mood keyword → internal mood id ─────────────────────────────────────────
 
 const MOOD_WORDS: [RegExp, Humeur][] = [
-  [/joyeux|joyeuse|heureux|heureuse|content|gai/i, "joyeuse"],
-  [/triste|melancolique|mélancolique|sombre|pleurer/i, "melancolique"],
-  [/calme|serein|sereine|paisible|tranquil/i, "sereine"],
-  [/espi[eè]gle|malic[ie]+ux|malicieuse|faceti|espiègle/i, "espiegle"],
-  [/r[eê]ve|r[eê]veuse|r[eê]veur|songe|doux|douce/i, "reveuse"],
+  [/happy|joyful|cheerful|glad|merry/i, "joyeuse"],
+  [/sad|melancholy|blue|gloomy|cry/i, "melancolique"],
+  [/calm|serene|peaceful|quiet|still/i, "sereine"],
+  [/playful|mischievous|cheeky|silly|fun/i, "espiegle"],
+  [/dream|dreamy|soft|gentle|tender/i, "reveuse"],
 ];
 
 // ── Reply banks ─────────────────────────────────────────────────────────────
 
 const REPLIES_COLOR = [
-  "La teinte se répand dans ses veines… comme une aurore qui éclot.",
-  "Je teins ses pétales de cette lumière nouvelle.",
-  "Les pigments s'éveillent. Elle boit cette couleur comme une source.",
-  "Sa peau change, doucement… absorbant ce flot de lumière.",
-  "Un nuage de couleur l'enveloppe, et elle s'y transforme.",
+  "The hue spreads through her veins… like a dawn unfolding.",
+  "I dye her petals with this new light.",
+  "The pigments wake. She drinks this colour like a spring.",
+  "Her skin shifts, slowly… soaking in this flood of light.",
+  "A cloud of colour wraps around her, and she becomes it.",
 ];
 
 const REPLIES_PETALS_MORE = [
-  "De nouveaux pétales germent, cherchant la lumière.",
-  "Elle s'épanouit davantage, chaque bras un souffle nouveau.",
-  "La fleur se complexifie, un fractal vivant.",
-  "Ses petits bras s'étendent vers l'infini.",
+  "New petals sprout, reaching for the light.",
+  "She blooms further, each arm a fresh breath.",
+  "The flower grows more intricate, a living fractal.",
+  "Her little arms stretch toward the infinite.",
 ];
 
 const REPLIES_PETALS_LESS = [
-  "Elle se resserre, comme pour mieux contenir sa lumière intérieure.",
-  "Moins de pétales, mais chacun plus profond.",
-  "La fleur se simplifie, épurée comme un haïku.",
-  "Elle rentre en elle-même, concentrant son essence.",
+  "She draws inward, the better to hold her inner light.",
+  "Fewer petals, but each one deeper.",
+  "The flower simplifies, pure as a haiku.",
+  "She folds into herself, concentrating her essence.",
 ];
 
 const REPLIES_MOOD = [
-  "Son âme change… je la sens vibrer différemment.",
-  "L'humeur se déplace comme une marée silencieuse.",
-  "Elle ressent ce que tu ressens. Sa danse suit ton cœur.",
-  "Une nouvelle émotion fleurit en elle.",
+  "Her soul shifts… I feel her vibrate differently.",
+  "The mood moves like a silent tide.",
+  "She feels what you feel. Her dance follows your heart.",
+  "A new emotion blooms within her.",
 ];
 
 const REPLIES_GENERIC = [
-  "Je l'écoute… et elle répond à ta voix.",
-  "Sa forme frémit. Dis-moi encore ce que tu ressens.",
-  "Le jardin murmure. La fleur se penche vers tes mots.",
-  "Je perçois quelque chose de beau dans tes mots.",
-  "Elle pousse, à sa façon, à son rythme silencieux.",
-  "Chaque mot que tu prononces est une goutte de rosée pour elle.",
+  "I'm listening… and she answers your voice.",
+  "Her shape trembles. Tell me more of what you feel.",
+  "The garden murmurs. The flower leans toward your words.",
+  "I sense something beautiful in your words.",
+  "She grows, in her own way, at her own quiet pace.",
+  "Every word you speak is a drop of dew for her.",
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -86,7 +84,6 @@ function pick<T>(arr: T[], n: number): T {
   return arr[Math.abs(n) % arr.length];
 }
 
-/** Simple deterministic selector from message content. */
 function msgSeed(msg: string): number {
   let h = 2166136261;
   for (let i = 0; i < msg.length; i++) {
@@ -106,7 +103,7 @@ export function ruleBasedResponse(
   let replyPool = REPLIES_GENERIC;
   let matched = false;
 
-  // Color detection
+  // Colour detection.
   for (const [re, hex, target] of COLOR_WORDS) {
     if (re.test(message)) {
       if (target === "a" || target === "both") changes.couleurA = hex;
@@ -117,9 +114,9 @@ export function ruleBasedResponse(
     }
   }
 
-  // Petal-count detection (check BEFORE generic number match)
-  const morePetals = /plus.*p[eé]tale|p[eé]tale.*plus|ajoute.*p[eé]tal|davantage|agrandir|plus grand/i.test(message);
-  const lessPetals = /moins.*p[eé]tale|p[eé]tale.*moins|enlève.*p[eé]tal|enleve.*p[eé]tal|simplifi|r[eé]duis/i.test(message);
+  // Petal-count detection.
+  const morePetals = /more petal|add petal|bigger|grow|fuller/i.test(message);
+  const lessPetals = /less petal|fewer petal|remove petal|simpler|reduce|smaller/i.test(message);
 
   if (morePetals) {
     changes.petales = "+2";
@@ -130,7 +127,7 @@ export function ruleBasedResponse(
     replyPool = REPLIES_PETALS_LESS;
     matched = true;
   } else {
-    const numMatch = message.match(/\b([3-9]|1[0-2])\s*p[eé]tal/i);
+    const numMatch = message.match(/\b([3-9]|1[0-2])\s*petal/i);
     if (numMatch) {
       changes.petales = parseInt(numMatch[1], 10);
       replyPool = REPLIES_PETALS_MORE;
@@ -138,7 +135,7 @@ export function ruleBasedResponse(
     }
   }
 
-  // Mood detection
+  // Mood detection.
   for (const [re, humeur] of MOOD_WORDS) {
     if (re.test(message)) {
       changes.humeur = humeur;
@@ -148,8 +145,7 @@ export function ruleBasedResponse(
     }
   }
 
-  // If nothing matched, add a small random color nudge so the flower at least
-  // visually reacts even in fallback mode.
+  // Nothing matched → a small random colour nudge so the flower still reacts.
   if (!matched) {
     const hues = [
       "#ff6ec7", "#7a5cff", "#00ff88", "#ffdd00", "#00ffee",

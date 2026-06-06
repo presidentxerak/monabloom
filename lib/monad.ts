@@ -94,7 +94,7 @@ let inscriptionTimestamps: number[] = [];
 
 export class RateLimitError extends Error {
   constructor() {
-    super("Le jardin se repose. Reviens dans un moment planter ta fleur.");
+    super("The garden is resting. Come back in a little while to plant your flower.");
     this.name = "RateLimitError";
   }
 }
@@ -129,7 +129,7 @@ export async function inscrireGenome(
   adresseJoueur: string,
 ): Promise<InscriptionResult> {
   if (!isAddress(adresseJoueur)) {
-    throw new Error("Adresse Monad invalide.");
+    throw new Error("Invalid Monad address.");
   }
   const to = getAddress(adresseJoueur) as Address; // checksum
 

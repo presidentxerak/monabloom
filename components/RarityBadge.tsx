@@ -17,9 +17,8 @@ export default function RarityBadge({
         color: rarity.color,
         borderColor: `${rarity.color}66`,
         background: `${rarity.color}1a`,
-        textShadow: `0 0 6px ${rarity.color}66`,
       }}
-      title={`Rareté : ${rarity.tier} (${rarity.score}/100)`}
+      title={`Rarity: ${rarity.tier} (${rarity.score}/100)`}
     >
       ✦ {rarity.tier}
     </span>

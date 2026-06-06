@@ -60,7 +60,7 @@ function saveCollection(items: FlowerListing[]) {
 
 function PriceTag({ price }: { price: number }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
+    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700">
       {price.toFixed(2)} MON
     </span>
   );
@@ -69,8 +69,8 @@ function PriceTag({ price }: { price: number }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col">
-      <span className="text-base font-medium text-zinc-100">{value}</span>
-      <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+      <span className="text-base font-medium text-zinc-800">{value}</span>
+      <span className="text-[10px] uppercase tracking-wide text-zinc-400">
         {label}
       </span>
     </div>
@@ -99,16 +99,13 @@ function FlowerCard({
 
   return (
     <div
-      className="group flex flex-col overflow-hidden rounded-2xl border bg-black/40 backdrop-blur-sm transition hover:scale-[1.02]"
-      style={{
-        borderColor: `${rarity.color}44`,
-        boxShadow: `0 0 16px ${item.genome.couleurA}18`,
-      }}
+      className="group flex flex-col overflow-hidden rounded-2xl border bg-white/65 backdrop-blur-sm transition hover:scale-[1.02]"
+      style={{ borderColor: `${rarity.color}40` }}
     >
       <div
         className="relative flex items-center justify-center p-4"
         style={{
-          background: `radial-gradient(circle at 50% 50%, ${item.genome.couleurA}14 0%, transparent 70%)`,
+          background: `radial-gradient(circle at 50% 45%, ${item.genome.couleurB}22 0%, transparent 72%)`,
         }}
       >
         <div className="absolute left-2 top-2">
@@ -119,25 +116,20 @@ function FlowerCard({
             href={item.explorerUrl ?? "#"}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute right-2 top-2 rounded-full bg-emerald-900/50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-300 transition hover:bg-emerald-800/60"
-            title="Inscrite on-chain"
+            className="absolute right-2 top-2 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700 transition hover:bg-emerald-500/30"
+            title="Inscribed on-chain"
           >
-            ⛓️ on-chain
+            on-chain
           </a>
         )}
         <FlowerPreview genome={item.genome} size={130} />
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <p
-          className="truncate text-sm font-medium"
-          style={{ color: item.genome.couleurA }}
-        >
-          {item.name}
-        </p>
+        <p className="truncate text-sm font-medium text-zinc-800">{item.name}</p>
         <div className="flex items-center justify-between gap-1">
           <PriceTag price={item.price} />
-          <span className="truncate text-[10px] text-zinc-600">
+          <span className="truncate text-[10px] text-zinc-400">
             {item.seller.slice(0, 6)}…{item.seller.slice(-4)}
           </span>
         </div>
@@ -147,35 +139,35 @@ function FlowerCard({
             {item.listed ? (
               <button
                 onClick={() => onUnlist(item)}
-                className="rounded-full border border-white/20 py-1.5 text-xs text-zinc-400 transition hover:bg-white/10"
+                className="rounded-full border border-black/10 py-1.5 text-xs text-zinc-500 transition hover:bg-black/5"
               >
-                Retirer de la vente
+                Unlist
               </button>
             ) : (
               <button
                 onClick={() => onList(item)}
-                className="rounded-full py-1.5 text-xs font-medium text-black transition hover:opacity-90"
+                className="rounded-full py-1.5 text-xs font-medium text-white transition hover:opacity-90"
                 style={{ background: item.genome.couleurA }}
               >
-                Mettre en vente
+                List for sale
               </button>
             )}
             {!item.txHash && (
               <button
                 onClick={() => onInscribe(item)}
-                className="rounded-full border border-white/10 py-1 text-[11px] text-zinc-400 transition hover:border-emerald-500/40 hover:text-emerald-300"
+                className="rounded-full border border-black/10 py-1 text-[11px] text-zinc-500 transition hover:border-emerald-400 hover:text-emerald-600"
               >
-                ⛓️ Inscrire on-chain
+                Inscribe on-chain
               </button>
             )}
           </div>
         ) : (
           <button
             onClick={() => onBuy(item)}
-            className="mt-auto rounded-full py-1.5 text-xs font-medium text-black transition hover:opacity-90"
+            className="mt-auto rounded-full py-1.5 text-xs font-medium text-white transition hover:opacity-90"
             style={{ background: item.genome.couleurA }}
           >
-            {wallet ? `Acheter ${item.price.toFixed(2)} MON` : "Connecter le wallet"}
+            {wallet ? `Buy ${item.price.toFixed(2)} MON` : "Connect wallet"}
           </button>
         )}
       </div>
@@ -198,17 +190,12 @@ function PriceModal({
   const rarity = computeRarity(item.genome);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
       <div
-        className="w-full max-w-sm rounded-2xl border bg-black/90 p-6"
+        className="w-full max-w-sm rounded-2xl border bg-white p-6 shadow-xl"
         style={{ borderColor: `${rarity.color}55` }}
       >
-        <h2
-          className="mb-1 text-lg font-medium"
-          style={{ color: item.genome.couleurA }}
-        >
-          Mettre en vente
-        </h2>
+        <h2 className="mb-1 text-lg font-medium text-zinc-800">List for sale</h2>
         <p className="mb-4 text-sm text-zinc-500">{item.name}</p>
         <div className="mb-5 flex items-center gap-3">
           <FlowerPreview genome={item.genome} size={80} />
@@ -216,30 +203,30 @@ function PriceModal({
             <div className="mb-2">
               <RarityBadge rarity={rarity} />
             </div>
-            <label className="mb-1 block text-xs text-zinc-400">Prix en MON</label>
+            <label className="mb-1 block text-xs text-zinc-500">Price in MON</label>
             <input
               type="number"
               step="0.01"
               min="0.01"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="w-full rounded-xl bg-white/5 px-3 py-2 text-sm text-zinc-100 outline-none focus:bg-white/10"
+              className="w-full rounded-xl bg-zinc-100 px-3 py-2 text-sm text-zinc-800 outline-none focus:bg-zinc-50"
             />
           </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 rounded-full border border-white/20 py-2 text-sm text-zinc-400 transition hover:bg-white/10"
+            className="flex-1 rounded-full border border-black/10 py-2 text-sm text-zinc-500 transition hover:bg-black/5"
           >
-            Annuler
+            Cancel
           </button>
           <button
             onClick={() => onConfirm(parseFloat(price) || 0.05)}
-            className="flex-1 rounded-full py-2 text-sm font-medium text-black transition hover:opacity-90"
+            className="flex-1 rounded-full py-2 text-sm font-medium text-white transition hover:opacity-90"
             style={{ background: item.genome.couleurA }}
           >
-            Confirmer
+            Confirm
           </button>
         </div>
       </div>
@@ -262,32 +249,27 @@ function BuyModal({
 }) {
   const rarity = computeRarity(item.genome);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
       <div
-        className="w-full max-w-sm rounded-2xl border bg-black/90 p-6"
+        className="w-full max-w-sm rounded-2xl border bg-white p-6 shadow-xl"
         style={{ borderColor: `${rarity.color}55` }}
       >
-        <h2
-          className="mb-1 text-lg font-medium"
-          style={{ color: item.genome.couleurA }}
-        >
-          Cueillir cette fleur
-        </h2>
+        <h2 className="mb-1 text-lg font-medium text-zinc-800">Pick this flower</h2>
         <p className="mb-4 text-xs text-zinc-500">{item.name}</p>
         <div className="mb-4 flex items-center gap-4">
           <FlowerPreview genome={item.genome} size={90} />
-          <div className="text-sm text-zinc-300">
+          <div className="text-sm text-zinc-600">
             <div className="mb-2">
               <RarityBadge rarity={rarity} />
             </div>
             <p>
-              Prix :{" "}
-              <span className="font-medium text-emerald-300">
+              Price:{" "}
+              <span className="font-medium text-emerald-600">
                 {item.price.toFixed(2)} MON
               </span>
             </p>
-            <p className="mt-2 text-xs text-zinc-400">
-              Le paiement part en MON sur Monad testnet.
+            <p className="mt-2 text-xs text-zinc-500">
+              Payment is sent in MON on Monad testnet.
             </p>
           </div>
         </div>
@@ -295,17 +277,17 @@ function BuyModal({
           <button
             onClick={onClose}
             disabled={buying}
-            className="flex-1 rounded-full border border-white/20 py-2 text-sm text-zinc-400 transition hover:bg-white/10 disabled:opacity-40"
+            className="flex-1 rounded-full border border-black/10 py-2 text-sm text-zinc-500 transition hover:bg-black/5 disabled:opacity-40"
           >
-            Annuler
+            Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={buying}
-            className="flex-1 rounded-full py-2 text-sm font-medium text-black transition hover:opacity-90 disabled:opacity-50"
+            className="flex-1 rounded-full py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
             style={{ background: item.genome.couleurA }}
           >
-            {buying ? "Transaction…" : "Cueillir"}
+            {buying ? "Transaction…" : "Pick"}
           </button>
         </div>
       </div>
@@ -327,7 +309,7 @@ function BreedTab({
   function toggle(id: string) {
     setSelected((cur) => {
       if (cur.includes(id)) return cur.filter((x) => x !== id);
-      if (cur.length >= 2) return [cur[1], id]; // keep the latest two
+      if (cur.length >= 2) return [cur[1], id];
       return [...cur, id];
     });
   }
@@ -344,35 +326,28 @@ function BreedTab({
   if (owned.length < 2) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="mb-4 text-5xl opacity-30">🐝</div>
-        <p className="text-zinc-500">
-          Il te faut au moins deux fleurs pour polliniser.
-        </p>
+        <p className="text-zinc-500">You need at least two flowers to pollinate.</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm text-zinc-400">
-        Choisis <span className="text-zinc-200">deux fleurs</span> à croiser — leur
-        enfant héritera de leurs traits.
+      <p className="text-sm text-zinc-500">
+        Pick <span className="text-zinc-800">two flowers</span> to cross — their
+        child inherits their traits.
       </p>
 
-      {/* Child preview */}
       {child && (
         <div
-          className="mx-auto flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border p-5"
-          style={{
-            borderColor: `${computeRarity(child).color}66`,
-            background: `radial-gradient(circle at 50% 30%, ${child.couleurA}14 0%, transparent 70%)`,
-          }}
+          className="mx-auto flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border bg-white/70 p-5"
+          style={{ borderColor: `${computeRarity(child).color}55` }}
         >
           <div className="flex items-center gap-4">
             <FlowerPreview genome={parents[0].genome} size={64} />
-            <span className="text-2xl text-zinc-500">＋</span>
+            <span className="text-2xl text-zinc-400">+</span>
             <FlowerPreview genome={parents[1].genome} size={64} />
-            <span className="text-2xl text-zinc-500">＝</span>
+            <span className="text-2xl text-zinc-400">=</span>
             <FlowerPreview genome={child} size={96} />
           </div>
           <RarityBadge rarity={computeRarity(child)} />
@@ -381,15 +356,14 @@ function BreedTab({
               onKeep(child);
               setSelected([]);
             }}
-            className="rounded-full px-6 py-2 text-sm font-medium text-black transition hover:opacity-90"
+            className="rounded-full px-6 py-2 text-sm font-medium text-white transition hover:opacity-90"
             style={{ background: child.couleurA }}
           >
-            🐝 Faire éclore l'hybride
+            Hatch the hybrid
           </button>
         </div>
       )}
 
-      {/* Selectable owned grid */}
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
         {owned.map((f) => {
           const isSel = selected.includes(f.id);
@@ -397,23 +371,22 @@ function BreedTab({
             <button
               key={f.id}
               onClick={() => toggle(f.id)}
-              className="relative flex flex-col items-center gap-1 rounded-xl border p-2 transition hover:scale-[1.03]"
+              className="relative flex flex-col items-center gap-1 rounded-xl border bg-white/60 p-2 transition hover:scale-[1.03]"
               style={{
-                borderColor: isSel ? f.genome.couleurA : "rgba(255,255,255,0.08)",
-                boxShadow: isSel ? `0 0 16px ${f.genome.couleurA}66` : undefined,
-                background: isSel ? `${f.genome.couleurA}12` : "rgba(0,0,0,0.3)",
+                borderColor: isSel ? f.genome.couleurA : "rgba(0,0,0,0.08)",
+                boxShadow: isSel ? `0 0 16px ${f.genome.couleurA}55` : undefined,
               }}
             >
               {isSel && (
                 <span
-                  className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-black"
+                  className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
                   style={{ background: f.genome.couleurA }}
                 >
                   {selected.indexOf(f.id) + 1}
                 </span>
               )}
               <FlowerPreview genome={f.genome} size={84} />
-              <span className="truncate text-[10px] text-zinc-400">{f.name}</span>
+              <span className="truncate text-[10px] text-zinc-500">{f.name}</span>
             </button>
           );
         })}
@@ -456,17 +429,17 @@ export default function GardenPage() {
   async function connectWallet() {
     const eth = getEthereum();
     if (!eth) {
-      showToast("Installe MetaMask pour cueillir des fleurs !");
+      showToast("Install MetaMask to pick flowers!");
       return;
     }
     try {
       const acc = await connect();
       if (acc) {
         setWallet(acc);
-        showToast(`Wallet connecté : ${acc.slice(0, 8)}…`);
+        showToast(`Wallet connected: ${acc.slice(0, 8)}…`);
       }
     } catch {
-      showToast("Connexion annulée.");
+      showToast("Connection cancelled.");
     }
   }
 
@@ -491,7 +464,7 @@ export default function GardenPage() {
     };
     persist([...collection, newFlower]);
     getSoundEngine().playBloom();
-    showToast(`${name} a éclos — ${rarity.tier} !`);
+    showToast(`${name} has bloomed — ${rarity.tier}!`);
     setTab("collection");
   }
 
@@ -509,7 +482,7 @@ export default function GardenPage() {
     };
     persist([...collection, newFlower]);
     getSoundEngine().playBloom();
-    showToast(`Hybride ${name} créé !`);
+    showToast(`Hybrid ${name} created!`);
     setTab("collection");
   }
 
@@ -522,12 +495,12 @@ export default function GardenPage() {
     );
     setListModal(null);
     getSoundEngine().playSell();
-    showToast("Fleur mise en vente !");
+    showToast("Flower listed for sale!");
   }
 
   function handleUnlist(item: FlowerListing) {
     persist(collection.map((f) => (f.id === item.id ? { ...f, listed: false } : f)));
-    showToast("Fleur retirée de la vente.");
+    showToast("Flower removed from sale.");
   }
 
   async function handleInscribe(item: FlowerListing) {
@@ -536,7 +509,7 @@ export default function GardenPage() {
       return;
     }
     try {
-      showToast("Signe la transaction dans ton wallet…");
+      showToast("Sign the transaction in your wallet…");
       const { txHash, explorerUrl } = await inscribeOnChain(wallet, item.genome);
       persist(
         collection.map((f) =>
@@ -544,9 +517,9 @@ export default function GardenPage() {
         ),
       );
       getSoundEngine().playSell();
-      showToast("Fleur inscrite pour l'éternité ⛓️");
+      showToast("Flower inscribed forever ⛓");
     } catch {
-      showToast("Inscription annulée ou refusée.");
+      showToast("Inscription cancelled or rejected.");
     }
   }
 
@@ -572,10 +545,10 @@ export default function GardenPage() {
       };
       persist([...collection, acquired]);
       getSoundEngine().playSell();
-      showToast(`${buyModal.name} rejoint ta collection !`);
+      showToast(`${buyModal.name} joined your collection!`);
       setBuyModal(null);
     } catch {
-      showToast("Transaction annulée ou refusée.");
+      showToast("Transaction cancelled or rejected.");
     } finally {
       setBuying(false);
     }
@@ -617,37 +590,37 @@ export default function GardenPage() {
     baseItems.length > 0 ? Math.min(...baseItems.map((i) => i.price)) : 0;
 
   return (
-    <div className="min-h-screen bg-void text-zinc-100">
+    <div className="min-h-screen text-zinc-800">
       {/* Nav */}
-      <nav className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-black/70 px-4 py-3 backdrop-blur-md">
+      <nav className="sticky top-0 z-30 flex items-center justify-between border-b border-black/10 bg-white/65 px-4 py-3 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <Link href="/" className="neon-title font-display text-lg tracking-[0.3em]">
-            FLOWERMON
+          <Link href="/" className="brand-title font-display text-lg">
+            FLOWER<span className="brand-dot">MON</span>
           </Link>
-          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-zinc-400">
-            🌿 The Garden
+          <span className="hidden rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500 sm:inline-block">
+            The Garden
           </span>
         </div>
         <div className="flex items-center gap-2">
           <SoundEngine genome={dummyGenome} />
           {wallet ? (
-            <span className="rounded-full bg-emerald-900/40 px-3 py-1 text-xs text-emerald-300">
+            <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-700">
               {wallet.slice(0, 6)}…{wallet.slice(-4)}
             </span>
           ) : (
             <button
               onClick={connectWallet}
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs transition hover:bg-white/20"
+              className="pill rounded-full px-3 py-1.5 text-xs"
             >
-              Connecter wallet
+              Connect wallet
             </button>
           )}
           <button
             onClick={createFlower}
-            className="rounded-full px-3 py-1.5 text-xs font-medium text-black transition hover:opacity-90"
+            className="rounded-full px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
             style={{ background: "#ff6ec7" }}
           >
-            + Faire éclore
+            + New flower
           </button>
         </div>
       </nav>
@@ -655,22 +628,22 @@ export default function GardenPage() {
       <div className="mx-auto max-w-6xl px-4 pt-6">
         {/* Tabs + stats + sort */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-1 rounded-full bg-white/5 p-1">
+          <div className="flex gap-1 rounded-full bg-white/60 p-1">
             {(
               [
-                ["market", "Marché"],
-                ["collection", "Ma collection"],
-                ["breed", "🐝 Pollinisation"],
+                ["market", "Market"],
+                ["collection", "My collection"],
+                ["breed", "Pollination"],
               ] as const
             ).map(([t, label]) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`rounded-full px-4 py-1.5 text-sm transition ${tab === t ? "bg-white/15 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`rounded-full px-4 py-1.5 text-sm transition ${tab === t ? "bg-white text-zinc-800 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
               >
                 {label}
                 {t === "collection" && ownedFlowers.length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
+                  <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px]">
                     {ownedFlowers.length}
                   </span>
                 )}
@@ -680,19 +653,19 @@ export default function GardenPage() {
 
           {tab !== "breed" && (
             <div className="flex items-center gap-5">
-              <Stat label="Fleurs" value={String(items.length)} />
+              <Stat label="Flowers" value={String(items.length)} />
               {tab === "market" && (
-                <Stat label="Prix plancher" value={`${floor.toFixed(2)} MON`} />
+                <Stat label="Floor price" value={`${floor.toFixed(2)} MON`} />
               )}
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
-                className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-zinc-300 outline-none hover:bg-white/10"
+                className="rounded-full border border-black/10 bg-white/70 px-3 py-1.5 text-xs text-zinc-600 outline-none hover:bg-white"
               >
-                <option value="recent">Récent</option>
-                <option value="price-asc">Prix ↑</option>
-                <option value="price-desc">Prix ↓</option>
-                <option value="rarity">Rareté</option>
+                <option value="recent">Recent</option>
+                <option value="price-asc">Price ↑</option>
+                <option value="price-desc">Price ↓</option>
+                <option value="rarity">Rarity</option>
               </select>
             </div>
           )}
@@ -703,19 +676,18 @@ export default function GardenPage() {
           <BreedTab owned={ownedFlowers} onKeep={keepChild} />
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="mb-4 text-5xl opacity-30">🌸</div>
             <p className="text-zinc-500">
               {tab === "market"
-                ? "Le jardin est encore en sommeil."
-                : "Ta collection est vide. Fais éclore ta première fleur !"}
+                ? "The garden is still sleeping."
+                : "Your collection is empty. Grow your first flower!"}
             </p>
             {tab === "collection" && (
               <button
                 onClick={createFlower}
-                className="mt-4 rounded-full px-5 py-2 text-sm font-medium text-black"
+                className="mt-4 rounded-full px-5 py-2 text-sm font-medium text-white"
                 style={{ background: "#ff6ec7" }}
               >
-                Faire éclore une fleur
+                Grow a flower
               </button>
             )}
           </div>
@@ -755,7 +727,7 @@ export default function GardenPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/10 bg-black/90 px-5 py-2.5 text-sm text-zinc-200 shadow-lg">
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-900/90 px-5 py-2.5 text-sm text-white shadow-lg">
           {toast}
         </div>
       )}

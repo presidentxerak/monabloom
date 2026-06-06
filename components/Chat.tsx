@@ -14,7 +14,7 @@ interface Msg {
 const GREETING: Msg = {
   role: "assistant",
   content:
-    "Bonjour, petite âme. Décris-moi l'émotion ou la couleur que tu veux voir éclore… et je la ferai germer.",
+    "Hello, little soul. Tell me the emotion or the colour you'd like to see bloom… and I'll make it grow.",
 };
 
 export default function Chat({
@@ -75,7 +75,7 @@ export default function Chat({
         ...m,
         {
           role: "assistant",
-          content: "Un silence… le jardin n'a pas répondu. Réessaie ?",
+          content: "A silence… the garden didn't answer. Try again?",
         },
       ]);
     } finally {
@@ -86,29 +86,20 @@ export default function Chat({
   }
 
   return (
-    <div
-      className="flex h-full flex-col rounded-2xl border bg-black/40 backdrop-blur-sm"
-      style={{
-        borderColor: genome.couleurB,
-        boxShadow: `0 0 24px ${genome.couleurB}33`,
-      }}
-    >
+    <div className="glass flex h-full flex-col rounded-3xl">
       <div
         ref={scrollRef}
         className="flex-1 space-y-3 overflow-y-auto p-4"
         style={{ scrollbarWidth: "thin" }}
       >
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={m.role === "user" ? "text-right" : "text-left"}
-          >
+          <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
             <span
               className="inline-block max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed"
               style={
                 m.role === "user"
-                  ? { background: `${genome.couleurB}22`, color: "#e9e3ff" }
-                  : { background: "rgba(255,255,255,0.04)", color: "#d7d2e0" }
+                  ? { background: `${genome.couleurB}26`, color: "#2b2535" }
+                  : { background: "rgba(255,255,255,0.7)", color: "#4a4456" }
               }
             >
               {m.content}
@@ -117,7 +108,7 @@ export default function Chat({
         ))}
         {loading && (
           <div className="text-left text-xs italic text-zinc-500">
-            {planting ? "Je la plante dans la chaîne…" : "le Jardinier murmure…"}
+            {planting ? "Planting it on-chain…" : "the gardener whispers…"}
           </div>
         )}
         {cert && (
@@ -127,7 +118,7 @@ export default function Chat({
         )}
       </div>
 
-      <div className="border-t border-white/10 p-3">
+      <div className="border-t border-black/5 p-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -138,17 +129,20 @@ export default function Chat({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="dis ton envie… ou colle ton adresse 0x…"
+            placeholder="say your wish… or paste your 0x address"
             disabled={loading}
-            className="flex-1 rounded-full bg-white/5 px-4 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:bg-white/10"
+            className="flex-1 rounded-full bg-white/70 px-4 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:bg-white"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="rounded-full px-4 py-2 text-sm font-medium text-black transition disabled:opacity-40"
+            aria-label="Send"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white transition disabled:opacity-40"
             style={{ background: genome.couleurA }}
           >
-            ↵
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
           </button>
         </form>
       </div>

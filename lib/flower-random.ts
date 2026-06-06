@@ -50,17 +50,17 @@ export function genomeAleatoire(): Genome {
   return genomeFromSeed(seed);
 }
 
-// ── Poetic French name generator ─────────────────────────────────────────────
+// ── Poetic name generator ────────────────────────────────────────────────────
 
 const NOM_ADJ = [
-  "Soyeuse", "Ardente", "Lunaire", "Cristalline", "Sauvage", "Céleste",
-  "Veloutée", "Boréale", "Éthérée", "Flamboyante", "Givrée", "Solaire",
-  "Nocturne", "Onirique", "Tendre", "Électrique", "Brumeuse", "Mystique",
+  "Silken", "Ardent", "Lunar", "Crystal", "Wild", "Celestial",
+  "Velvet", "Boreal", "Ethereal", "Blazing", "Frosted", "Solar",
+  "Nocturnal", "Dreamy", "Tender", "Electric", "Misty", "Mystic",
 ];
 const NOM_FLEUR = [
-  "Corolle", "Pivoine", "Aurore", "Comète", "Nébuleuse", "Étincelle",
-  "Lueur", "Murmure", "Éclat", "Rosée", "Braise", "Vague",
-  "Aube", "Songe", "Flamme", "Marée", "Halo", "Prisme",
+  "Corolla", "Peony", "Aurora", "Comet", "Nebula", "Spark",
+  "Glow", "Murmur", "Gleam", "Dewdrop", "Ember", "Wave",
+  "Dawn", "Reverie", "Flame", "Tide", "Halo", "Prism",
 ];
 
 /** Deterministic poetic name from a seed hash (stable per flower). */
@@ -68,23 +68,23 @@ export function nomPoetique(seedHash: string): string {
   const n = seedFromHex(seedHash);
   const adj = NOM_ADJ[n % NOM_ADJ.length];
   const fleur = NOM_FLEUR[Math.floor(n / 7) % NOM_FLEUR.length];
-  return `${fleur} ${adj}`;
+  return `${adj} ${fleur}`;
 }
 
 /** Pre-generated demo seeds for the marketplace. */
 const DEMO_SEEDS = [
-  "soleil-ardent-du-matin",
-  "lune-de-cristal-violet",
-  "flamme-ocean-profond",
-  "rosee-aurore-boreale",
-  "tempete-emeraude-nuit",
-  "douceur-cerise-doree",
-  "reve-cobalt-feu",
-  "foret-magenta-ciel",
-  "pluie-or-turquoise",
-  "vent-rubis-argent",
-  "braise-cyan-cosmos",
-  "velours-saphir-rose",
+  "ardent-morning-sun",
+  "violet-crystal-moon",
+  "deep-ocean-flame",
+  "boreal-dawn-dew",
+  "emerald-night-storm",
+  "golden-cherry-bloom",
+  "cobalt-fire-dream",
+  "magenta-sky-forest",
+  "gold-turquoise-rain",
+  "ruby-silver-wind",
+  "cyan-cosmos-ember",
+  "rose-sapphire-velvet",
 ];
 
 export const DEMO_FLOWERS = DEMO_SEEDS.map((seed, i) => ({

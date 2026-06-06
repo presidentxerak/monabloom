@@ -2,14 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import AsciiFace from "@/components/AsciiFace";
 import Chat from "@/components/Chat";
 import FlowerCanvas from "@/components/FlowerCanvas";
 import SoundEngine from "@/components/SoundEngine";
 import FeedBar from "@/components/FeedBar";
 import { genomeDefaut, type Genome } from "@/lib/genome";
 import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
+import { hexToRgb } from "@/lib/flower-engine";
 import { getSoundEngine } from "@/lib/sound";
+
+/** Light pastel page tint derived from the flower's secondary colour. */
+function pastel(hex: string): string {
+  const [r, g, b] = hexToRgb(hex).map((v) => Math.round(v + (255 - v) * 0.84));
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 export default function Home() {
   const [genome, setGenome] = useState<Genome>(() => genomeDefaut());
@@ -19,6 +25,7 @@ export default function Home() {
     const root = document.documentElement;
     root.style.setProperty("--bloom-a", genome.couleurA);
     root.style.setProperty("--bloom-b", genome.couleurB);
+    root.style.setProperty("--bg-pastel", pastel(genome.couleurB));
   }, [genome.couleurA, genome.couleurB]);
 
   function handleFeed(action: FeedAction) {
@@ -36,50 +43,45 @@ export default function Home() {
   return (
     <main className="relative flex min-h-screen flex-col gap-3 p-3 lg:h-screen lg:flex-row lg:overflow-hidden lg:gap-4 lg:p-4">
       {/* Flower stage */}
-      <section className="relative flex min-h-[55vh] flex-1 flex-col items-center justify-center lg:min-h-0">
-        <div className="bloom-aura pointer-events-none absolute inset-0" />
-
+      <section className="relative flex min-h-[58vh] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl lg:min-h-0">
         {/* Brand + Garden link */}
-        <header className="absolute left-2 top-2 z-10 flex items-center gap-3">
-          <h1 className="neon-title font-display text-lg tracking-[0.3em]">
-            FLOWERMON
+        <header className="absolute left-3 top-3 z-10 flex items-center gap-2">
+          <h1 className="brand-title font-display text-lg">
+            FLOWER<span className="brand-dot">MON</span>
           </h1>
           <Link
             href="/garden"
-            className="garden-link flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition"
+            className="pill rounded-full px-3 py-1 text-xs font-medium"
           >
-            <span>🌿</span>
-            <span>The Garden</span>
+            The Garden
           </Link>
         </header>
 
-        {/* Sound toggle (top-right of the stage, clear of the chat) */}
-        <div className="absolute right-2 top-2 z-10">
+        {/* Sound toggle */}
+        <div className="absolute right-3 top-3 z-10">
           <SoundEngine genome={genome} />
         </div>
 
-        {/* The flower */}
-        <div className="relative aspect-square w-full max-w-[600px]">
+        {/* The 3D flower fills the stage */}
+        <div className="absolute inset-0">
           <FlowerCanvas genome={genome} />
-          <AsciiFace genome={genome} />
         </div>
 
-        {/* Care actions + ephemeral note */}
-        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
+        {/* Care actions */}
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
           {feedNote && (
-            <span
-              className="rounded-full bg-black/60 px-3 py-1 text-xs backdrop-blur-sm"
-              style={{ color: genome.couleurA }}
-            >
+            <span className="rounded-full bg-black/45 px-3 py-1 text-xs text-white backdrop-blur-sm">
               {feedNote}
             </span>
           )}
-          <FeedBar genome={genome} onFeed={handleFeed} />
+          <div className="pointer-events-auto">
+            <FeedBar onFeed={handleFeed} />
+          </div>
         </div>
       </section>
 
       {/* Dialogue */}
-      <section className="flex h-[42vh] w-full flex-col lg:h-auto lg:w-[380px]">
+      <section className="flex h-[40vh] w-full flex-col lg:h-auto lg:w-[380px]">
         <Chat genome={genome} onGenome={setGenome} />
       </section>
     </main>

@@ -32,16 +32,26 @@ export default function SoundEngine({ genome }: { genome: Genome }) {
   return (
     <button
       onClick={toggle}
-      title={on ? "Couper la musique" : "Activer la musique"}
-      aria-label={on ? "Couper la musique" : "Activer la musique"}
-      className="sound-btn flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-zinc-300 backdrop-blur-sm transition hover:bg-white/10"
-      style={{
-        color: on ? genome.couleurA : undefined,
-        borderColor: on ? `${genome.couleurA}55` : undefined,
-        boxShadow: on ? `0 0 12px ${genome.couleurA}55` : undefined,
-      }}
+      title={on ? "Mute music" : "Play music"}
+      aria-label={on ? "Mute music" : "Play music"}
+      className="sound-btn flex h-10 w-10 items-center justify-center rounded-full bg-black/35 text-white/90 backdrop-blur-md transition hover:bg-white/15"
+      style={{ color: on ? genome.couleurA : undefined }}
     >
-      {on ? "♫" : "♪"}
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M9 18V6l10-2v12" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="16" cy="16" r="3" />
+        {!on && <path d="M3 3l18 18" />}
+      </svg>
     </button>
   );
 }

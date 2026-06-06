@@ -25,3 +25,12 @@ export const HUMEUR_META: Record<Humeur, HumeurMeta> = {
   espiegle: { pulse: 1.4, open: "(=^･ω･^=)", blink: "(=^-ω-^=)", bouche: "chat" },
   sereine: { pulse: 1.0, open: "( ˘ ᵕ ˘ )", blink: "( - ᵕ - )", bouche: "neutre" },
 };
+
+/** English display labels for the (internal, on-chain) mood ids. */
+export const HUMEUR_LABEL: Record<Humeur, string> = {
+  joyeuse: "joyful",
+  reveuse: "dreamy",
+  melancolique: "melancholic",
+  espiegle: "playful",
+  sereine: "serene",
+};
