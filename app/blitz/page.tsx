@@ -64,7 +64,7 @@ export default function BlitzGardenPage() {
         {/* 3D garden */}
         <section className="relative min-h-[52vh] flex-1">
           <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-white/70 px-3 py-1 text-[11px] text-zinc-500 backdrop-blur-sm">
-            click a flower to inspect it
+            drag to orbit · scroll to zoom · click a flower to inspect
           </div>
           <BlitzGarden flowers={flowers} selectedId={selectedId} onSelect={setSelectedId} />
         </section>

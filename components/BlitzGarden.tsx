@@ -3,20 +3,15 @@
 import { useEffect, useRef } from "react";
 import type p5 from "p5";
 import type { Genome } from "@/lib/genome";
-import { hexToRgb, lerpRgb, type RGB } from "@/lib/flower-engine";
+import { drawFlowermon, CHAR_FOOT } from "@/lib/flower3d";
 
-export interface BlitzFlower { id: string; genome: Genome; owner: string; }
-
-function tint(c: RGB, t: number): RGB {
-  return [c[0] + (255 - c[0]) * t, c[1] + (255 - c[1]) * t, c[2] + (255 - c[2]) * t];
-}
-
-interface Place { id: string; genome: Genome; sx: number; sy: number; R: number; gz: number; }
+export interface BlitzFlower { id: string; genome: Genome; owner: string }
 
 /**
- * A 3D garden: a tilted ground plane staged with flower-characters that stand
- * on it in perspective (smaller and higher toward the back). Click a flower to
- * select it. Positions are anchored to known screen points so clicks are exact.
+ * A real, orbitable 3D garden. Flowermon characters stand spaced out on a
+ * grassy plane, with kawaii clouds, mountains and a sun. Drag to orbit, scroll
+ * to zoom, click a character to select it (GPU colour-picking, so selection
+ * works from any angle).
  */
 export default function BlitzGarden({
   flowers,
@@ -43,117 +38,115 @@ export default function BlitzGarden({
       if (!mounted || !container) return;
 
       let t = 0;
-      let placements: Place[] = [];
+      const BASE_TILT = 0.92;
+      const R = 42;            // character head radius
+      const SPACING = 240;     // distance between flowers (spread out)
+      let pickReq: { x: number; y: number } | null = null;
+      let downX = 0, downY = 0, moved = false;
+
+      const positions = (n: number) => {
+        const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
+        const rows = Math.ceil(n / cols);
+        const out: { x: number; z: number }[] = [];
+        for (let i = 0; i < n; i++) {
+          const c = i % cols, r = Math.floor(i / cols);
+          out.push({ x: (c - (cols - 1) / 2) * SPACING, z: (r - (rows - 1) / 2) * SPACING });
+        }
+        return out;
+      };
 
       const sketch = (p: p5) => {
         const measure = () => ({ w: container.clientWidth || 800, h: container.clientHeight || 600 });
         p.setup = () => { const { w, h } = measure(); p.createCanvas(w, h, p.WEBGL); p.frameRate(60); p.smooth(); };
 
-        const setMat = (c: RGB, spec = 60, shine = 12) => { p.fill(c[0], c[1], c[2]); p.ambientMaterial(c[0], c[1], c[2]); p.specularMaterial(spec); p.shininess(shine); };
-        const surfZ = (R: number, x: number, y: number, out = 0) => Math.sqrt(Math.max(0, R * R - x * x - y * y)) + out;
+        const setMat = (r: number, g: number, b: number, spec = 50, shine = 8) => { p.fill(r, g, b); p.ambientMaterial(r, g, b); p.specularMaterial(spec); p.shininess(shine); };
 
-        const computeLayout = (): Place[] => {
-          const w = p.width, h = p.height;
-          const list = flowersRef.current.slice(0, 24);
-          const n = list.length;
-          if (n === 0) return [];
-          const rows = Math.max(1, Math.min(5, Math.round(Math.sqrt(n * 1.2))));
-          const perRow = Math.ceil(n / rows);
-          const out: Place[] = [];
-          for (let i = 0; i < n; i++) {
-            const row = Math.floor(i / perRow);
-            const col = i % perRow;
-            const colCount = Math.min(perRow, n - row * perRow);
-            const gz = rows > 1 ? row / (rows - 1) : 0.5; // 0 far .. 1 near
-            const yBase = h * 0.34 + gz * (h * 0.46);
-            const R = h * (0.045 + gz * 0.06);
-            const spread = w * (0.28 + gz * 0.18);
-            const stagger = row % 2 ? spread / Math.max(1, colCount) * 0.5 : 0;
-            const x = colCount > 1 ? w / 2 + ((col / (colCount - 1)) - 0.5) * 2 * spread + stagger : w / 2 + stagger;
-            const jitter = Math.sin(i * 12.9) * h * 0.012;
-            out.push({ id: list[i].id, genome: list[i].genome, sx: x, sy: yBase + jitter, R, gz });
+        const drawDecor = () => {
+          // Ground.
+          p.push(); p.rotateX(Math.PI / 2); setMat(168, 208, 150, 10, 2); p.plane(3200, 3200); p.pop();
+          p.push(); p.translate(0, -1, 0); p.rotateX(Math.PI / 2); setMat(180, 218, 162, 10, 2); p.circle(0, 0, 1500); p.pop();
+          // Mountains (far ring, soft blue).
+          for (let k = 0; k < 7; k++) {
+            const a = (k / 7) * Math.PI * 2 + 0.3;
+            const mx = Math.cos(a) * 1500, mz = Math.sin(a) * 1500;
+            const hgt = 520 + ((k * 137) % 260);
+            p.push(); p.translate(mx, -hgt / 2, mz); p.rotateZ(Math.PI); setMat(150, 158, 205, 8, 2); p.cone(380, hgt, 5, 1, true); p.pop();
+            p.push(); p.translate(mx, -hgt + 30, mz); p.rotateZ(Math.PI); setMat(238, 240, 252, 8, 2); p.cone(120, 120, 5, 1, true); p.pop();
           }
-          out.sort((a, b) => a.gz - b.gz); // far first
-          return out;
+          // Sun.
+          p.push(); p.translate(-900, -1100, -700); setMat(255, 224, 120, 120, 30); p.sphere(160, 18, 14); p.pop();
+          // Kawaii clouds (drifting, with faces).
+          const clouds: [number, number, number, number][] = [[-700, -700, 200, 1], [500, -820, -300, 0.7], [0, -620, 600, 1.2], [820, -680, 360, 0.9]];
+          for (let i = 0; i < clouds.length; i++) {
+            const [bx, cy, cz, sc] = clouds[i];
+            const cx = ((bx + t * 14 * sc + 1800) % 3600) - 1800;
+            p.push(); p.translate(cx, cy, cz); p.scale(sc);
+            setMat(255, 255, 255, 30, 6);
+            for (const [ox, oy, rr] of [[-80, 10, 70], [0, -20, 95], [80, 10, 72], [-30, 25, 60], [40, 25, 60]] as const) {
+              p.push(); p.translate(ox, oy, 0); p.sphere(rr, 16, 12); p.pop();
+            }
+            // face
+            setMat(60, 60, 75, 10, 4);
+            p.push(); p.translate(-32, -8, 92); p.sphere(9, 8, 6); p.pop();
+            p.push(); p.translate(32, -8, 92); p.sphere(9, 8, 6); p.pop();
+            for (const mx of [-18, 0, 18]) { p.push(); p.translate(mx, 22, 92); p.sphere(6, 8, 6); p.pop(); }
+            p.push(); p.translate(-60, 18, 86); setMat(255, 175, 195, 10, 4); p.sphere(12, 8, 6); p.pop();
+            p.push(); p.translate(60, 18, 86); setMat(255, 175, 195, 10, 4); p.sphere(12, 8, 6); p.pop();
+            p.pop();
+          }
         };
 
-        const drawGround = () => {
-          p.push();
-          p.translate(0, p.height * 0.30, -320);
-          p.rotateX(Math.PI / 2.5);
-          setMat([196, 224, 188], 20, 4);
-          p.plane(p.width * 2.8, 2400);
-          p.pop();
-          // a soft near strip
-          p.push();
-          p.translate(0, p.height * 0.42, -40);
-          p.rotateX(Math.PI / 2.5);
-          setMat([182, 214, 176], 20, 4);
-          p.plane(p.width * 2.2, 700);
-          p.pop();
-        };
+        const idColor = (i: number): [number, number, number] => [Math.min(255, i * 14), 0, 0];
 
-        const drawChar = (g: Genome, R: number, ti: number, glow: boolean) => {
-          const a = hexToRgb(g.couleurA), b = hexToRgb(g.couleurB);
-          const n = g.petales;
-          if (glow) {
-            p.push(); p.translate(0, R * 2.4, 0); p.rotateX(Math.PI / 2); setMat([255, 238, 150], 120, 30); p.torus(R * 1.6, R * 0.09, 24, 8); p.pop();
+        const renderCharacters = (pick: boolean, list: BlitzFlower[], pos: { x: number; z: number }[]) => {
+          for (let i = 0; i < list.length; i++) {
+            p.push();
+            p.translate(pos[i].x, -CHAR_FOOT * R, pos[i].z);
+            if (pick) {
+              const [cr, cg, cb] = idColor(i + 1);
+              p.push(); p.noStroke(); p.fill(cr, cg, cb); p.translate(0, CHAR_FOOT * R * 0.5, 0); p.sphere(R * 2.7, 12, 10); p.pop();
+            } else {
+              // selection halo
+              if (list[i].id === selRef.current) { p.push(); p.translate(0, CHAR_FOOT * R, 0); p.rotateX(Math.PI / 2); setMat(255, 236, 150, 120, 30); p.torus(R * 1.9, R * 0.12, 24, 8); p.pop(); }
+              drawFlowermon(p, list[i].genome, R, t + i);
+            }
+            p.pop();
           }
-          p.push();
-          p.rotateY(ti * 0.5);
-          for (let i = 0; i < n; i++) {
-            const ang = (i / n) * Math.PI * 2;
-            setMat(tint(lerpRgb(a, b, i / Math.max(1, n)), 0.06), 70, 14);
-            p.push(); p.rotateZ(ang); p.translate(0, -(R * 1.0 + R * 0.64), 0); p.rotateX(-0.32);
-            p.ellipsoid(R * 0.28, R * 0.64, R * 0.22, 12, 8); p.pop();
-          }
-          setMat(tint(a, 0.5), 50, 14); p.push(); p.sphere(R, 26, 20); p.pop();
-          const dark: RGB = [45, 38, 52];
-          for (const sx of [-1, 1]) { const x = sx * R * 0.32, y = -R * 0.04; p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 15, 6); p.sphere(R * 0.09, 8, 6); p.pop(); }
-          for (const sx of [-1, 1]) { const x = sx * R * 0.46, y = R * 0.14; p.push(); p.translate(x, y, surfZ(R, x, y)); setMat([255, 165, 190], 20, 6); p.ellipsoid(R * 0.12, R * 0.08, R * 0.04, 10, 6); p.pop(); }
-          { const x = 0, y = R * 0.22; p.push(); p.translate(x, y, surfZ(R, x, y, R * 0.01)); setMat(dark, 15, 6); p.sphere(R * 0.05, 8, 6); p.pop(); }
-          p.pop();
-          for (let k = 1; k <= 3; k++) { setMat(tint(k % 2 ? a : b, 0.2), 50, 12); p.push(); p.translate(0, R * (0.9 + k * 0.5), 0); p.sphere(R * 0.34, 14, 10); p.pop(); }
         };
 
         p.draw = () => {
           t += 0.016;
-          p.background(228, 238, 250); // sky
-          p.ambientLight(150, 150, 158);
-          p.directionalLight(150, 150, 158, -0.4, -0.7, -0.6);
-          p.pointLight(120, 120, 128, -200, -300, 360);
+          const list = flowersRef.current.slice(0, 12);
+          const pos = positions(list.length);
+
+          p.orbitControl(2.5, 2.5, 0.25);
+
+          // Pick pass (flat colours), read the pixel, then draw the real scene.
+          if (pickReq) {
+            p.background(0, 0, 0);
+            p.push(); p.rotateX(BASE_TILT); renderCharacters(true, list, pos); p.pop();
+            const c = p.get(Math.floor(pickReq.x), Math.floor(pickReq.y)) as number[];
+            const id = Math.round((c?.[0] ?? 0) / 14);
+            if (id >= 1 && id <= list.length) onSelRef.current(list[id - 1].id);
+            pickReq = null;
+          }
+
+          p.background(214, 233, 252);
+          p.ambientLight(165, 165, 172);
+          p.directionalLight(160, 160, 168, -0.4, -0.7, -0.5);
+          p.pointLight(120, 120, 130, -400, -700, 500);
           p.noStroke();
-
-          drawGround();
-
-          placements = computeLayout();
-          for (const pl of placements) {
-            // soft shadow on the ground
-            p.push();
-            p.translate(pl.sx - p.width / 2, pl.sy - p.height / 2 + pl.R * 2.35, -2);
-            p.noStroke(); p.fill(70, 90, 70, 60); p.ellipse(0, 0, pl.R * 2.3, pl.R * 0.7);
-            p.pop();
-            // flower
-            const bob = Math.sin(t * 1.6 + pl.sx) * pl.R * 0.06;
-            p.push();
-            p.translate(pl.sx - p.width / 2, pl.sy - p.height / 2 + bob, 0);
-            drawChar(pl.genome, pl.R, t + pl.sx * 0.01, pl.id === selRef.current);
-            p.pop();
-          }
+          p.push();
+          p.rotateX(BASE_TILT);
+          drawDecor();
+          renderCharacters(false, list, pos);
+          p.pop();
         };
 
-        p.mousePressed = () => {
-          // Ignore clicks outside the canvas (e.g. on the side panel).
-          if (p.mouseX < 0 || p.mouseX > p.width || p.mouseY < 0 || p.mouseY > p.height) return;
-          let best: Place | null = null, bestD = 1e9;
-          for (const pl of placements) {
-            const d = Math.hypot(p.mouseX - pl.sx, p.mouseY - pl.sy);
-            if (d < bestD) { bestD = d; best = pl; }
-          }
-          // Only SELECT on a hit. Never clear the selection on a miss (so the
-          // side panel and its buttons stay alive).
-          if (best && bestD < best.R * 1.7) onSelRef.current(best.id);
-        };
+        const inCanvas = (x: number, y: number) => x >= 0 && x <= p.width && y >= 0 && y <= p.height;
+        p.mousePressed = () => { downX = p.mouseX; downY = p.mouseY; moved = false; };
+        p.mouseDragged = () => { if (Math.hypot(p.mouseX - downX, p.mouseY - downY) > 6) moved = true; };
+        p.mouseReleased = () => { if (!moved && inCanvas(downX, downY)) pickReq = { x: downX, y: downY }; };
       };
 
       instance = new P5(sketch, container);
