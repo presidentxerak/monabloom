@@ -5,11 +5,13 @@ import Link from "next/link";
 import FlowerPreview from "@/components/FlowerPreview";
 import SoundEngine from "@/components/SoundEngine";
 import RarityBadge from "@/components/RarityBadge";
+import { genomeAleatoire, nomPoetique } from "@/lib/flower-random";
+import { PLAYER_FLOWERS } from "@/lib/fake-players";
 import {
-  genomeAleatoire,
-  nomPoetique,
-  DEMO_FLOWERS,
-} from "@/lib/flower-random";
+  loadCollection,
+  saveCollection,
+  type FlowerListing,
+} from "@/lib/collection";
 import { computeRarity } from "@/lib/rarity";
 import { croiser } from "@/lib/actions";
 import type { Genome } from "@/lib/genome";
@@ -22,39 +24,8 @@ import {
   getEthereum,
 } from "@/lib/wallet";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface FlowerListing {
-  id: string;
-  name: string;
-  genome: Genome;
-  price: number;
-  seller: string;
-  listed: boolean;
-  txHash: string | null;
-  explorerUrl?: string | null;
-  owned?: boolean;
-}
-
 type Tab = "market" | "collection" | "breed";
 type SortKey = "recent" | "price-asc" | "price-desc" | "rarity";
-
-// ── Local storage ────────────────────────────────────────────────────────────
-
-const STORAGE_KEY = "flowermon_collection";
-
-function loadCollection(): FlowerListing[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveCollection(items: FlowerListing[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
 
 // ── Small bits ───────────────────────────────────────────────────────────────
 
@@ -130,7 +101,9 @@ function FlowerCard({
         <div className="flex items-center justify-between gap-1">
           <PriceTag price={item.price} />
           <span className="truncate text-[10px] text-zinc-400">
-            {item.seller.slice(0, 6)}…{item.seller.slice(-4)}
+            {item.owner
+              ? `@${item.owner}`
+              : `${item.seller.slice(0, 6)}…${item.seller.slice(-4)}`}
           </span>
         </div>
 
@@ -561,9 +534,9 @@ export default function GardenPage() {
 
   const baseItems: FlowerListing[] = useMemo(() => {
     if (tab === "market") {
-      const demoListed = DEMO_FLOWERS.filter((f) => f.listed);
+      const playerListed = PLAYER_FLOWERS.filter((f) => f.listed);
       const ownListed = collection.filter((f) => f.listed && f.owned);
-      return [...demoListed, ...ownListed];
+      return [...ownListed, ...playerListed];
     }
     if (tab === "collection") return ownedFlowers;
     return [];

@@ -8,6 +8,7 @@ import SoundEngine from "@/components/SoundEngine";
 import FeedBar from "@/components/FeedBar";
 import { genomeDefaut, type Genome } from "@/lib/genome";
 import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
+import { addOwnedGenome } from "@/lib/collection";
 import { hexToRgb } from "@/lib/flower-engine";
 import { getSoundEngine } from "@/lib/sound";
 
@@ -38,6 +39,13 @@ export default function Home() {
     const engine = getSoundEngine();
     if (action === "eau" || action === "pouvoir") engine.playBloom();
     else engine.playSparkle();
+  }
+
+  function handleSave() {
+    const flower = addOwnedGenome(genome);
+    getSoundEngine().playSell();
+    setFeedNote(`Saved "${flower.name}" to The Garden — list it to sell!`);
+    setTimeout(() => setFeedNote(null), 3200);
   }
 
   return (
@@ -75,7 +83,7 @@ export default function Home() {
             </span>
           )}
           <div className="pointer-events-auto">
-            <FeedBar onFeed={handleFeed} />
+            <FeedBar onFeed={handleFeed} onSave={handleSave} />
           </div>
         </div>
       </section>
