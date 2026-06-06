@@ -8,7 +8,7 @@ import { mulberry32, seedFromHex } from "@/lib/prng";
 
 export interface BlitzFlower { id: string; genome: Genome; owner: string }
 
-const MAP_R = 3000;
+const MAP_R = 15000;
 
 interface Scatter { x: number; z: number; s: number; rot: number }
 
@@ -45,21 +45,25 @@ export default function BlitzGarden({
       let pickReq: { x: number; y: number } | null = null;
       let eye = { x: 0, y: -1, z: 1 };
 
-      // Deterministic decor scatter, built once.
-      const rng = mulberry32(seedFromHex("blitzgardenv2"));
+      // Deterministic decor scatter, built once. Big world: flowers cluster in
+      // the centre, decor fills the surroundings out to the map edge.
+      const rng = mulberry32(seedFromHex("blitzgardenv3"));
+      const PAL: [number, number, number][] = [[255, 110, 160], [255, 180, 90], [120, 200, 255], [170, 130, 255], [120, 220, 150], [255, 130, 220]];
       const scatter = (count: number, minR: number, maxR: number): Scatter[] =>
-        Array.from({ length: count }, () => { const a = rng() * Math.PI * 2; const r = minR + Math.sqrt(rng()) * (maxR - minR); return { x: Math.cos(a) * r, z: Math.sin(a) * r, s: 0.7 + rng() * 0.9, rot: rng() * Math.PI * 2 }; });
-      const trees = scatter(20, 350, 2900);
-      const firs = scatter(16, 450, 2950);
-      const bushes = scatter(30, 220, 2900);
-      const barns = scatter(3, 1300, 2600);
-      const pens = scatter(3, 1100, 2500);
-      const ponds = scatter(2, 800, 2300);
+        Array.from({ length: count }, () => { const a = rng() * Math.PI * 2; const r = minR + Math.sqrt(rng()) * (maxR - minR); return { x: Math.cos(a) * r, z: Math.sin(a) * r, s: 0.7 + rng() * 1.1, rot: rng() * Math.PI * 2 }; });
+      const trees = scatter(48, 700, 13500);
+      const firs = scatter(40, 800, 14000);
+      const bushes = scatter(80, 500, 13500);
+      const tufts = scatter(130, 400, 14000);
+      const barns = scatter(7, 2600, 12000);
+      const pens = scatter(7, 2300, 11000);
+      const ponds = scatter(5, 1600, 10000);
+      const balloons = scatter(8, 2500, 9000);
 
       const flowerPos = (id: string) => {
         const s = seedFromHex(id);
         const r1 = (s % 100000) / 100000, r2 = ((s >>> 7) % 100000) / 100000;
-        const a = r1 * Math.PI * 2, rad = (0.08 + Math.sqrt(r2) * 0.72) * 2600;
+        const a = r1 * Math.PI * 2, rad = (0.06 + Math.sqrt(r2) * 0.7) * 3000;
         return { x: Math.cos(a) * rad, z: Math.sin(a) * rad };
       };
 
@@ -76,21 +80,32 @@ export default function BlitzGarden({
         const barn = (it: Scatter) => { p.push(); p.translate(it.x, 0, it.z); p.rotateY(it.rot); setMat(192, 74, 74); p.push(); p.translate(0, -74, 0); p.box(230, 150, 170); p.pop(); setMat(152, 52, 52); p.push(); p.translate(0, -168, 0); p.rotateZ(Math.PI / 4); p.box(150, 150, 178); p.pop(); setMat(118, 40, 40); p.push(); p.translate(0, -42, 87); p.box(64, 84, 8); p.pop(); p.pop(); };
         const sheep = (lx: number, lz: number) => { p.push(); p.translate(lx, 0, lz); setMat(242, 242, 247); p.push(); p.translate(0, -42, 0); p.sphere(34, 12, 10); p.pop(); p.push(); p.translate(-26, -46, 0); p.sphere(20, 10, 8); p.pop(); setMat(44, 44, 52); p.push(); p.translate(40, -48, 0); p.sphere(16, 10, 8); p.pop(); for (const a of [-18, 18]) for (const b of [-14, 14]) { p.push(); p.translate(a, -14, b); p.cylinder(5, 30, 6, 1); p.pop(); } p.pop(); };
         const pen = (it: Scatter) => { p.push(); p.translate(it.x, 0, it.z); p.rotateY(it.rot); setMat(156, 124, 92); const hf = 190; for (const [ax, az2, w, d] of [[0, -hf, 2 * hf, 14], [0, hf, 2 * hf, 14], [-hf, 0, 14, 2 * hf], [hf, 0, 14, 2 * hf]] as const) { p.push(); p.translate(ax, -34, az2); p.box(w, 68, d); p.pop(); } sheep(60, -40); sheep(-60, 50); sheep(10, 90); p.pop(); };
-        const pond = (it: Scatter) => { p.push(); p.translate(it.x, -2, it.z); p.rotateX(Math.PI / 2); setMat(126, 186, 238, 255, 60, 20); p.circle(0, 0, 380 * it.s); setMat(170, 210, 245, 255, 60, 20); p.circle(0, 0, 240 * it.s); p.pop(); };
-        const rainbow = () => { const cols: [number, number, number][] = [[255, 96, 96], [255, 162, 64], [255, 232, 96], [112, 212, 112], [92, 172, 255], [124, 112, 242], [184, 112, 232]]; p.push(); p.translate(-1600, 0, -2200); for (let k = 0; k < 7; k++) { setMat(cols[k][0], cols[k][1], cols[k][2], 255, 60, 20); p.push(); p.torus(660 - k * 44, 20, 26, 8); p.pop(); } p.pop(); };
+        const pond = (it: Scatter) => { p.push(); p.translate(it.x, -2, it.z); p.rotateX(Math.PI / 2); setMat(126, 186, 238, 255, 60, 20); p.circle(0, 0, 520 * it.s); setMat(170, 210, 245, 255, 60, 20); p.circle(0, 0, 320 * it.s); p.pop(); };
+        const tuft = (it: Scatter) => { const s = it.s; p.push(); p.translate(it.x, 0, it.z); setMat(96, 200, 110); for (const [ox, h] of [[-10, 34], [4, 46], [16, 30]] as const) { p.push(); p.translate(ox * s, -h * s * 0.5, 0); p.rotateZ(Math.PI); p.cone(6 * s, h * s, 5, 1, true); p.pop(); } p.pop(); };
+        const balloon = (it: Scatter, i: number) => { const s = it.s; const c = PAL[i % PAL.length]; const drift = Math.sin(t * 0.3 + i) * 120; p.push(); p.translate(it.x + drift, -1600 - s * 600, it.z); setMat(c[0], c[1], c[2], 255, 80, 20); p.push(); p.scale(1, 1.15, 1); p.sphere(180 * s, 16, 14); p.pop(); setMat(150, 110, 70); p.push(); p.translate(0, 250 * s, 0); p.box(70 * s, 70 * s, 70 * s); p.pop(); setMat(120, 120, 120); for (const sx of [-1, 1]) { p.push(); p.translate(sx * 90 * s, 150 * s, 0); p.box(4, 200 * s, 4); p.pop(); } p.pop(); };
+        const rainbow = () => { const cols: [number, number, number][] = [[255, 96, 96], [255, 162, 64], [255, 232, 96], [112, 212, 112], [92, 172, 255], [124, 112, 242], [184, 112, 232]]; p.push(); p.translate(-6000, 0, -8000); for (let k = 0; k < 7; k++) { setMat(cols[k][0], cols[k][1], cols[k][2], 255, 60, 20); p.push(); p.torus(2600 - k * 150, 70, 28, 8); p.pop(); } p.pop(); };
+
+        const near = (it: Scatter) => { const dx = it.x - eye.x, dz = it.z - eye.z; return dx * dx + dz * dz < 11000 * 11000; };
 
         const drawDecor = () => {
           // Ground (vivid grass).
-          p.push(); p.rotateX(Math.PI / 2); setMat(118, 214, 110, 255, 8, 2); p.plane(MAP_R * 3, MAP_R * 3); p.pop();
-          p.push(); p.translate(0, -1, 0); p.rotateX(Math.PI / 2); setMat(138, 226, 124, 255, 8, 2); p.circle(0, 0, MAP_R * 2.1); p.pop();
-          // Sun + clouds + mountains far away.
-          p.push(); p.translate(-2200, -2200, -2400); setMat(255, 226, 120, 255, 120, 30); p.sphere(320, 18, 14); p.pop();
-          for (let k = 0; k < 9; k++) { const a = (k / 9) * Math.PI * 2 + 0.2; const mx = Math.cos(a) * MAP_R * 1.25, mz = Math.sin(a) * MAP_R * 1.25; const hgt = 900 + ((k * 211) % 500); p.push(); p.translate(mx, -hgt / 2, mz); p.rotateZ(Math.PI); setMat(150, 158, 205, 255, 8, 2); p.cone(700, hgt, 5, 1, true); p.pop(); p.push(); p.translate(mx, -hgt + 60, mz); p.rotateZ(Math.PI); setMat(240, 242, 252, 255, 8, 2); p.cone(230, 220, 5, 1, true); p.pop(); }
+          p.push(); p.rotateX(Math.PI / 2); setMat(120, 206, 112, 255, 8, 2); p.plane(MAP_R * 3, MAP_R * 3); p.pop();
+          p.push(); p.translate(0, -1, 0); p.rotateX(Math.PI / 2); setMat(138, 220, 126, 255, 8, 2); p.circle(0, 0, MAP_R * 2.1); p.pop();
+          // Sun + mountains far away.
+          p.push(); p.translate(-9000, -9000, -10000); setMat(255, 226, 120, 255, 120, 30); p.sphere(1400, 18, 14); p.pop();
+          for (let k = 0; k < 11; k++) { const a = (k / 11) * Math.PI * 2 + 0.2; const mx = Math.cos(a) * MAP_R * 0.95, mz = Math.sin(a) * MAP_R * 0.95; const hgt = 3200 + ((k * 521) % 1800); p.push(); p.translate(mx, -hgt / 2, mz); p.rotateZ(Math.PI); setMat(150, 158, 205, 255, 8, 2); p.cone(2200, hgt, 5, 1, true); p.pop(); p.push(); p.translate(mx, -hgt + 200, mz); p.rotateZ(Math.PI); setMat(240, 242, 252, 255, 8, 2); p.cone(700, 700, 5, 1, true); p.pop(); }
           rainbow();
-          const clouds: [number, number, number, number][] = [[-1400, -1500, 600, 1.6], [900, -1700, -700, 1.2], [0, -1300, 1400, 1.9], [1700, -1500, 700, 1.4]];
-          for (const [bx, cy, cz, sc] of clouds) { const cx = ((bx + t * 28 * sc + MAP_R * 2) % (MAP_R * 4)) - MAP_R * 2; p.push(); p.translate(cx, cy, cz); p.scale(sc * 2.2); setMat(255, 255, 255, 255, 30, 6); for (const [ox, oy, rr] of [[-80, 10, 70], [0, -20, 95], [80, 10, 72], [-30, 25, 60], [40, 25, 60]] as const) { p.push(); p.translate(ox, oy, 0); p.sphere(rr, 12, 10); p.pop(); } setMat(60, 60, 75, 255, 10, 4); p.push(); p.translate(-32, -8, 92); p.sphere(9, 8, 6); p.pop(); p.push(); p.translate(32, -8, 92); p.sphere(9, 8, 6); p.pop(); for (const mx of [-18, 0, 18]) { p.push(); p.translate(mx, 22, 92); p.sphere(6, 8, 6); p.pop(); } setMat(255, 175, 195, 255, 10, 4); p.push(); p.translate(-60, 18, 86); p.sphere(12, 8, 6); p.pop(); p.push(); p.translate(60, 18, 86); p.sphere(12, 8, 6); p.pop(); p.pop(); }
-          // Ground props.
-          ponds.forEach(pond); bushes.forEach(bush); trees.forEach(tree); firs.forEach(fir); barns.forEach(barn); pens.forEach(pen);
+          const clouds: [number, number, number, number][] = [[-6000, -4200, 3000, 2.4], [4000, -5000, -3500, 1.8], [0, -3800, 7000, 2.8], [8000, -4600, 3500, 2.0], [-3000, -5400, -6000, 2.2]];
+          for (const [bx, cy, cz, sc] of clouds) { const cx = ((bx + t * 40 * sc + MAP_R * 2) % (MAP_R * 4)) - MAP_R * 2; p.push(); p.translate(cx, cy, cz); p.scale(sc * 5); setMat(255, 255, 255, 255, 30, 6); for (const [ox, oy, rr] of [[-80, 10, 70], [0, -20, 95], [80, 10, 72], [-30, 25, 60], [40, 25, 60]] as const) { p.push(); p.translate(ox, oy, 0); p.sphere(rr, 12, 10); p.pop(); } setMat(60, 60, 75, 255, 10, 4); p.push(); p.translate(-32, -8, 92); p.sphere(9, 8, 6); p.pop(); p.push(); p.translate(32, -8, 92); p.sphere(9, 8, 6); p.pop(); for (const mx of [-18, 0, 18]) { p.push(); p.translate(mx, 22, 92); p.sphere(6, 8, 6); p.pop(); } setMat(255, 175, 195, 255, 10, 4); p.push(); p.translate(-60, 18, 86); p.sphere(12, 8, 6); p.pop(); p.push(); p.translate(60, 18, 86); p.sphere(12, 8, 6); p.pop(); p.pop(); }
+          balloons.forEach((b, i) => balloon(b, i));
+          // Ground props (culled when far from the camera).
+          for (const it of ponds) if (near(it)) pond(it);
+          for (const it of tufts) if (near(it)) tuft(it);
+          for (const it of bushes) if (near(it)) bush(it);
+          for (const it of trees) if (near(it)) tree(it);
+          for (const it of firs) if (near(it)) fir(it);
+          for (const it of barns) if (near(it)) barn(it);
+          for (const it of pens) if (near(it)) pen(it);
         };
 
         const idColor = (i: number): [number, number, number] => [i * 3 + 5, 0, 0];
@@ -142,10 +157,10 @@ export default function BlitzGarden({
             applyCamera();
           }
 
-          p.background(150, 208, 255);
-          p.ambientLight(200, 200, 205);
-          p.directionalLight(210, 210, 215, -0.4, -0.7, -0.5);
-          p.pointLight(150, 150, 160, -1200, -1800, 1200);
+          p.background(138, 196, 244);
+          p.ambientLight(148, 148, 156);
+          p.directionalLight(164, 164, 172, -0.4, -0.7, -0.5);
+          p.pointLight(108, 108, 120, -6000, -9000, 6000);
           p.noStroke();
           drawDecor();
           renderFlowers(false);

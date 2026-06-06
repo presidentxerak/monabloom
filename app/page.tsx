@@ -76,6 +76,14 @@ export default function Landing() {
             <span className="text-zinc-300">×</span>
             <LunarstrategyLogo className="h-5 w-auto" />
           </div>
+          <p className="mt-1 text-[11px] text-zinc-500">
+            Design &amp; Code by{" "}
+            <a href="https://xerak.com" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted hover:text-zinc-800">xerak.com</a>
+            {" · "}
+            <a href="https://twitter.com/presidentmutant" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted hover:text-zinc-800">@presidentmutant</a>
+            {" · "}
+            <a href="mailto:xerak@xerak.com" className="underline decoration-dotted hover:text-zinc-800">xerak@xerak.com</a>
+          </p>
         </div>
       </section>
 
