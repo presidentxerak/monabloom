@@ -6,7 +6,8 @@ import Chat from "@/components/Chat";
 import FlowerCanvas from "@/components/FlowerCanvas";
 import SoundEngine from "@/components/SoundEngine";
 import FeedBar from "@/components/FeedBar";
-import { genomeDefaut, type Genome } from "@/lib/genome";
+import type { FeedSignal } from "@/components/FlowerCanvas";
+import { GenomeSchema, genomeDefaut, type Genome } from "@/lib/genome";
 import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
 import { addOwnedGenome } from "@/lib/collection";
 import { hexToRgb } from "@/lib/flower-engine";
@@ -21,6 +22,21 @@ function pastel(hex: string): string {
 export default function Home() {
   const [genome, setGenome] = useState<Genome>(() => genomeDefaut());
   const [feedNote, setFeedNote] = useState<string | null>(null);
+  const [feedSignal, setFeedSignal] = useState<FeedSignal | null>(null);
+
+  // If a flower was opened from The Garden, load it into the 3D + chat view.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("fm_view");
+      if (raw) {
+        sessionStorage.removeItem("fm_view");
+        const parsed = GenomeSchema.safeParse(JSON.parse(raw));
+        if (parsed.success) setGenome(parsed.data);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -31,6 +47,7 @@ export default function Home() {
 
   function handleFeed(action: FeedAction) {
     setGenome((g) => feedFlower(g, action));
+    setFeedSignal({ action, id: Date.now() }); // triggers the 3D feed animation
     const meta = FEED_ACTIONS.find((a) => a.id === action);
     if (meta) {
       setFeedNote(meta.reply);
@@ -72,7 +89,7 @@ export default function Home() {
 
         {/* The 3D flower fills the stage */}
         <div className="absolute inset-0">
-          <FlowerCanvas genome={genome} />
+          <FlowerCanvas genome={genome} feed={feedSignal} />
         </div>
 
         {/* Care actions */}

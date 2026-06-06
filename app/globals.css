@@ -48,3 +48,22 @@ body {
   border: 1px solid rgba(40, 30, 60, 0.1);
   backdrop-filter: blur(10px);
 }
+
+/* Slowly rotating petals for the SVG flower previews. */
+@keyframes fmspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.fm-spin {
+  animation-name: fmspin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fm-spin {
+    animation: none;
+  }
+}

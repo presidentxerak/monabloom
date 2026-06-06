@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import FlowerPreview from "@/components/FlowerPreview";
 import SoundEngine from "@/components/SoundEngine";
 import RarityBadge from "@/components/RarityBadge";
@@ -56,6 +57,7 @@ function FlowerCard({
   onList,
   onUnlist,
   onInscribe,
+  onView,
   wallet,
 }: {
   item: FlowerListing;
@@ -63,6 +65,7 @@ function FlowerCard({
   onList: (i: FlowerListing) => void;
   onUnlist: (i: FlowerListing) => void;
   onInscribe: (i: FlowerListing) => void;
+  onView: (i: FlowerListing) => void;
   wallet: string | null;
 }) {
   const rarity = useMemo(() => computeRarity(item.genome), [item.genome]);
@@ -79,7 +82,17 @@ function FlowerCard({
           background: `radial-gradient(circle at 50% 45%, ${item.genome.couleurB}22 0%, transparent 72%)`,
         }}
       >
-        <div className="absolute left-2 top-2">
+        <button
+          onClick={() => onView(item)}
+          title="View in 3D"
+          className="group/preview relative flex w-full items-center justify-center"
+        >
+          <FlowerPreview genome={item.genome} size={130} />
+          <span className="absolute bottom-0 rounded-full bg-zinc-900/80 px-2 py-0.5 text-[10px] text-white opacity-0 transition group-hover/preview:opacity-100">
+            View in 3D
+          </span>
+        </button>
+        <div className="pointer-events-none absolute left-2 top-2">
           <RarityBadge rarity={rarity} small />
         </div>
         {item.txHash && (
@@ -93,7 +106,6 @@ function FlowerCard({
             on-chain
           </a>
         )}
-        <FlowerPreview genome={item.genome} size={130} />
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
@@ -371,6 +383,7 @@ function BreedTab({
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function GardenPage() {
+  const router = useRouter();
   const [collection, setCollection] = useState<FlowerListing[]>([]);
   const [wallet, setWallet] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("market");
@@ -494,6 +507,15 @@ export default function GardenPage() {
     } catch {
       showToast("Inscription cancelled or rejected.");
     }
+  }
+
+  function handleView(item: FlowerListing) {
+    try {
+      sessionStorage.setItem("fm_view", JSON.stringify(item.genome));
+    } catch {
+      // ignore
+    }
+    router.push("/");
   }
 
   function handleBuy(item: FlowerListing) {
@@ -674,6 +696,7 @@ export default function GardenPage() {
                 onList={(i) => setListModal(i)}
                 onUnlist={handleUnlist}
                 onInscribe={handleInscribe}
+                onView={handleView}
                 wallet={wallet}
               />
             ))}
