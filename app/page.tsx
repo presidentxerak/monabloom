@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FlowerPreview from "@/components/FlowerPreview";
 import RarityBadge from "@/components/RarityBadge";
+import { MonadLogo, LunarstrategyLogo } from "@/components/Logos";
 import { genomeFromSeed } from "@/lib/flower-random";
 import { computeRarity } from "@/lib/rarity";
 import { tokenLabel, rank } from "@/lib/identity";
@@ -63,6 +64,18 @@ export default function Landing() {
           <Link href="/play" className="rounded-full bg-zinc-900 px-5 py-2.5 font-medium text-white transition hover:opacity-90">Grow a Flower</Link>
           <Link href="/cards" className="pill rounded-full px-5 py-2.5">Browse Cards</Link>
           <Link href="/blitz" className="pill rounded-full px-5 py-2.5">Enter Blitz Garden</Link>
+        </div>
+
+        {/* Hackathon credit + logos */}
+        <div className="mt-10 flex flex-col items-center gap-3">
+          <span className="text-[11px] uppercase tracking-[0.25em] text-zinc-400">
+            Created at the Monad hackathon
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-5 text-zinc-900">
+            <MonadLogo className="h-5 w-auto" />
+            <span className="text-zinc-300">×</span>
+            <LunarstrategyLogo className="h-5 w-auto" />
+          </div>
         </div>
       </section>
 
@@ -133,7 +146,7 @@ export default function Landing() {
       </section>
 
       <footer className="px-5 py-8 text-center text-[11px] text-zinc-400">
-        Flowermon · generative 3D flowers on Monad testnet
+        Flowermon · generative 3D flowers on Monad testnet · created at the Monad hackathon by Lunarstrategy
       </footer>
     </main>
   );
