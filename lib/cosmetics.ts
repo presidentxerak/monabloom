@@ -2,7 +2,7 @@ import { HATS, GLASSES, SHOES, type Hat, type Glasses, type Shoes } from "./geno
 
 export const HAT_LABELS: Record<Hat, string> = {
   none: "None",
-  cap: "Cap",
+  cap: "Bowler",
   party: "Party",
   tophat: "Top hat",
   crown: "Crown",

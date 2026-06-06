@@ -137,12 +137,13 @@ export default function FlowerCanvas({
         const drawHat = (R: number, type: string) => {
           if (!type || type === "none") return;
           if (type === "cap") {
-            // Dome hugging the top of the head, bottom rim at the brow, with a peak
-            // projecting forward from that rim (same red) so it reads as one cap.
-            setMat([230, 70, 90]);
-            p.push(); p.translate(0, -R * 0.7, 0); p.scale(1.2, 0.74, 1.2); p.sphere(R * 0.62, 24, 18); p.pop();
-            setMat([230, 70, 90]);
-            p.push(); p.translate(0, -R * 0.26, R * 0.86); p.rotateX(0.42); p.ellipsoid(R * 0.52, R * 0.08, R * 0.46, 20, 8); p.pop();
+            // Bowler / derby hat: rounded dark felt dome + small rolled brim + ribbon.
+            const felt: RGB = [52, 46, 62];
+            setMat(felt, 32, 8);
+            p.push(); p.translate(0, -R * 1.32, 0); p.scale(1.14, 0.92, 1.14); p.sphere(R * 0.46, 24, 18); p.pop();
+            p.push(); p.translate(0, -R * 0.9, 0); p.rotateX(Math.PI / 2); p.torus(R * 0.64, R * 0.1, 28, 12); p.pop();
+            setMat([150, 56, 80], 40, 12);
+            p.push(); p.translate(0, -R * 1.05, 0); p.rotateX(Math.PI / 2); p.torus(R * 0.4, R * 0.045, 24, 10); p.pop();
           } else if (type === "party") {
             // Cone flipped so the apex points up; base rests on the head top.
             setMat([232, 92, 200]);

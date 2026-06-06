@@ -157,7 +157,11 @@ export default function FlowerPreview({ genome, size = 140 }: Props) {
         if (hat === "tophat") return <g><rect x={cx - coreR * 0.36} y={top - coreR * 0.7} width={coreR * 0.72} height={coreR * 0.72} fill="#2c2836" /><rect x={cx - coreR * 0.62} y={top + coreR * 0.02} width={coreR * 1.24} height={coreR * 0.14} rx={coreR * 0.06} fill="#2c2836" /></g>;
         if (hat === "crown") return <path d={`M ${cx - coreR * 0.55} ${top + coreR * 0.1} L ${cx - coreR * 0.55} ${top - coreR * 0.3} L ${cx - coreR * 0.27} ${top} L ${cx} ${top - coreR * 0.38} L ${cx + coreR * 0.27} ${top} L ${cx + coreR * 0.55} ${top - coreR * 0.3} L ${cx + coreR * 0.55} ${top + coreR * 0.1} Z`} fill="#f0c33c" stroke="#d9a92a" strokeWidth={size * 0.006} />;
         if (hat === "beret") return <ellipse cx={cx} cy={top + coreR * 0.02} rx={coreR * 0.62} ry={coreR * 0.26} fill="#3f4a8c" />;
-        return <g><path d={`M ${cx - coreR * 0.62} ${top + coreR * 0.12} A ${coreR * 0.62} ${coreR * 0.62} 0 0 1 ${cx + coreR * 0.62} ${top + coreR * 0.12} Z`} fill="#e6465a" /><ellipse cx={cx + coreR * 0.45} cy={top + coreR * 0.16} rx={coreR * 0.45} ry={coreR * 0.1} fill="#cc3a4c" /></g>;
+        return <g>
+          <ellipse cx={cx} cy={top + coreR * 0.2} rx={coreR * 0.78} ry={coreR * 0.15} fill="#312b3e" />
+          <path d={`M ${cx - coreR * 0.5} ${top + coreR * 0.22} Q ${cx - coreR * 0.5} ${top - coreR * 0.5} ${cx} ${top - coreR * 0.5} Q ${cx + coreR * 0.5} ${top - coreR * 0.5} ${cx + coreR * 0.5} ${top + coreR * 0.22} Z`} fill="#473f58" />
+          <rect x={cx - coreR * 0.5} y={top + coreR * 0.04} width={coreR} height={coreR * 0.12} rx={coreR * 0.05} fill="#963850" />
+        </g>;
       })()}
     </svg>
   );
