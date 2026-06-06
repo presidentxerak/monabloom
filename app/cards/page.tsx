@@ -159,7 +159,7 @@ function FlowerCard({
             className="mt-auto rounded-full py-1.5 text-xs font-medium text-white transition hover:opacity-90"
             style={{ background: item.genome.couleurA }}
           >
-            {wallet ? `Buy ${item.price.toFixed(2)} MON` : "Connect wallet"}
+            {wallet ? `Buy ${item.price.toFixed(2)} MON` : "Collect"}
           </button>
         )}
       </div>
@@ -617,7 +617,7 @@ export default function GardenPage() {
               onClick={connectWallet}
               className="pill rounded-full px-3 py-1.5 text-xs"
             >
-              Connect wallet
+              Collect
             </button>
           )}
           <button

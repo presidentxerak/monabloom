@@ -31,7 +31,23 @@ function rotateHue(c: RGB, deg: number): RGB { const [h, s, l] = rgbToHsl(c[0], 
 
 function petal3DStyle(seedHash: string): number { return seedFromHex(seedHash + "3dshape") % 7; }
 
-export function drawFlowermon(p: p5, genome: Genome, R: number, t: number) {
+function computeRig(dance: number, t: number) {
+  let bobY = Math.sin(t * 1.6) * 0.05;
+  let spin = 0, twist = 0, headTilt = Math.sin(t * 1.6) * 0.04, sway = 0;
+  let armL = 0.2 + Math.sin(t * 1.6) * 0.06;
+  let armR = 0.2 + Math.sin(t * 1.6 + 1) * 0.06;
+  let legLift = 0;
+  switch (dance) {
+    case 1: armR = Math.PI * 0.82 + Math.sin(t * 9) * 0.25; armL = 0.22; headTilt = Math.sin(t * 4.5) * 0.06; bobY = Math.sin(t * 3) * 0.03; break;
+    case 2: twist = Math.sin(t * 3) * 0.6; sway = Math.sin(t * 3) * 0.1; armL = Math.PI * 0.45 + Math.sin(t * 3) * 0.25; armR = Math.PI * 0.45 - Math.sin(t * 3) * 0.25; bobY = Math.abs(Math.sin(t * 3)) * 0.04; headTilt = Math.sin(t * 3) * 0.08; break;
+    case 3: { const j = Math.max(0, Math.sin(t * 4)); bobY = -j * 0.5; legLift = j * 0.5; armL = armR = Math.PI * 0.5 + j * 0.45; headTilt = 0; break; }
+    case 4: { const q = Math.round(Math.sin(t * 2) * 2) / 2; armR = Math.PI * 0.5 + q * 0.5; armL = Math.PI * 0.5 - q * 0.5; headTilt = Math.round(Math.sin(t * 1.5)) * 0.13; bobY = 0; break; }
+    case 5: spin = t * 2.2; armL = armR = Math.PI * 0.5; bobY = Math.sin(t * 4) * 0.03; break;
+  }
+  return { bobY, spin, twist, headTilt, sway, armL, armR, legLift };
+}
+
+export function drawFlowermon(p: p5, genome: Genome, R: number, t: number, dance = 0, lod = 0) {
   const setMat = (c: RGB, spec = 70, shine = 14) => { p.fill(c[0], c[1], c[2]); p.ambientMaterial(c[0], c[1], c[2]); p.specularMaterial(spec); p.shininess(shine); };
   const surfZ = (x: number, y: number, out = 0) => Math.sqrt(Math.max(0, R * R - x * x - y * y)) + out;
   const ball = (x: number, y: number, z: number, r: number, c: RGB) => { p.push(); p.translate(x, y, z); setMat(c); p.sphere(r, 14, 11); p.pop(); };
@@ -46,10 +62,11 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number) {
   const vars: { len: number; wid: number; hue: number; tilt: number }[] = [];
   for (let i = 0; i < 12; i++) vars.push({ len: 1 + (rnd() - 0.5) * 0.24, wid: 1 + (rnd() - 0.5) * 0.24, hue: (rnd() - 0.5) * 0.5, tilt: 0.16 + rnd() * 0.22 });
 
-  // Idle pose.
-  const bobY = Math.sin(t * 1.6) * 0.05;
-  const armL = 0.2 + Math.sin(t * 1.6) * 0.06, armR = 0.2 + Math.sin(t * 1.6 + 1) * 0.06;
-  const headTilt = Math.sin(t * 1.6) * 0.04;
+  // Pose from the (optional) dance.
+  const rig = computeRig(dance, t);
+  const bobY = rig.bobY;
+  const armL = rig.armL, armR = rig.armR;
+  const headTilt = rig.headTilt;
   const spin = t * 0.45 * (genome.vitesse ?? 1);
 
   const petLen = R * 0.8, petW = R * 0.32, petThick = R * 0.28;
@@ -140,12 +157,35 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number) {
     for (const [mx, my, mr] of mouth) { p.push(); p.translate(mx, my, surfZ(mx, my, R * 0.01)); setMat(dark, 15, 6); p.sphere(mr, 10, 8); p.pop(); }
   };
 
-  // ── Compose ──
+  const n = genome.petales;
+
+  // ── Low-detail version (far flowers in the metaverse) ──
+  if (lod >= 1) {
+    p.push();
+    p.translate(0, bobY * R, 0);
+    p.push(); p.translate(0, -R * 0.1, R * 0.35); p.rotateZ(spin);
+    for (let i = 0; i < n; i++) {
+      const ang = (i / n) * Math.PI * 2; const v = vars[i % 12];
+      setMat(tint(lerpRgb(a, b, i / Math.max(1, n)), 0.06), 70, 12);
+      p.push(); p.rotateZ(ang); p.translate(0, -(R * 0.95 + petLen * v.len), 0); p.rotateX(-v.tilt);
+      p.ellipsoid(petW * v.wid, petLen * v.len, petThick, 8, 6); p.pop();
+    }
+    p.pop();
+    setMat(core, 50, 12); p.push(); p.sphere(R, 16, 12); p.pop();
+    for (const sx of [-1, 1]) { const x = sx * R * 0.32, y = -R * 0.04; p.push(); p.translate(x, y, surfZ(x, y, R * 0.01)); setMat([45, 38, 52], 15, 6); p.sphere(R * 0.07, 8, 6); p.pop(); }
+    ball(0, R * 1.1, 0, R * 0.34, cMain);
+    ball(0, R * 1.7, 0, R * 0.34, cAlt);
+    ball(0, R * 2.3, 0, R * 0.3, cMain);
+    p.pop();
+    return;
+  }
+
+  // ── Compose (full) ──
   p.push();
-  p.translate(0, bobY * R, 0);
+  p.translate(rig.sway * R, bobY * R, 0);
+  p.rotateY(rig.spin + rig.twist);
 
   // Petals (just in front of the body).
-  const n = genome.petales;
   p.push();
   p.translate(0, -R * 0.1, R * 0.35);
   p.rotateZ(spin);
@@ -176,7 +216,7 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number) {
     const shX = sx * R * 0.5, shY = R * 1.4;
     const arm: [number, RGB][] = [[0.28, cAlt], [0.26, cMain], [0.24, cAlt]];
     for (let k = 0; k < arm.length; k++) { const dist = (k + 1) * R * 0.55; ball(shX + sx * Math.sin(aAng) * dist, shY + Math.cos(aAng) * dist - (k + 1) * R * 0.02, 0, R * arm[k][0], arm[k][1]); }
-    const hipX = sx * R * 0.26, hipY = R * 2.75; const legLen = R * 0.55; let fy = hipY;
+    const hipX = sx * R * 0.26, hipY = R * 2.75; const legLen = R * 0.55 * (1 - rig.legLift * 0.55); let fy = hipY;
     const leg: [number, RGB][] = [[0.32, cMain], [0.28, cAlt]];
     for (let k = 0; k < leg.length; k++) { fy = hipY + (k + 1) * legLen; ball(hipX, fy, 0, R * leg[k][0], leg[k][1]); }
     drawShoe(hipX, fy + R * 0.35, genome.chaussures ?? "sneaker");

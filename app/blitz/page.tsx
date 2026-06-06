@@ -6,7 +6,7 @@ import BlitzGarden, { type BlitzFlower } from "@/components/BlitzGarden";
 import FlowerPreview from "@/components/FlowerPreview";
 import RarityBadge from "@/components/RarityBadge";
 import { PLAYER_FLOWERS } from "@/lib/fake-players";
-import { loadCollection } from "@/lib/collection";
+import { loadCollection, addOwnedGenome } from "@/lib/collection";
 import { computeRarity } from "@/lib/rarity";
 import { tokenLabel, rank } from "@/lib/identity";
 import { nomPoetique } from "@/lib/flower-random";
@@ -17,12 +17,13 @@ export default function BlitzGardenPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     const owned = loadCollection()
       .filter((f) => f.owned)
       .map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "you" }));
-    const players = PLAYER_FLOWERS.slice(0, 24).map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "player" }));
+    const players = PLAYER_FLOWERS.map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "player" }));
     setFlowers([...owned, ...players]);
 
     let alive = true;
@@ -45,6 +46,12 @@ export default function BlitzGardenPage() {
   /** Stash the flower so /play loads it, then the Link navigates there. */
   function stashView(g: BlitzFlower) {
     try { sessionStorage.setItem("fm_view", JSON.stringify(g.genome)); } catch {}
+  }
+
+  function collect(g: BlitzFlower) {
+    const f = addOwnedGenome(g.genome, 0.1, g.owner);
+    setNote(`Collected ${f.name} to your Cards!`);
+    setTimeout(() => setNote(null), 2800);
   }
 
   return (
@@ -91,7 +98,7 @@ export default function BlitzGardenPage() {
                     <span className="text-[10px] text-zinc-500">Rank #{rank(selected.genome)}</span>
                     <span className="text-[10px] text-zinc-400">@{selected.owner}</span>
                   </div>
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <Link
                       href="/play"
                       onClick={() => stashView(selected)}
@@ -100,12 +107,20 @@ export default function BlitzGardenPage() {
                       View in 3D
                     </Link>
                     <button
+                      onClick={() => collect(selected)}
+                      className="rounded-full px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90"
+                      style={{ background: selected.genome.couleurA }}
+                    >
+                      Collect
+                    </button>
+                    <button
                       onClick={() => setSelectedId(null)}
                       className="rounded-full border border-black/10 px-3 py-1.5 text-[11px] text-zinc-500 transition hover:bg-black/5"
                     >
                       Close
                     </button>
                   </div>
+                  {note && <div className="mt-1 text-[10px] text-emerald-600">{note}</div>}
                 </div>
               </div>
             </div>
