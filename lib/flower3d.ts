@@ -86,8 +86,9 @@ export function drawFlowermon(p: p5, genome: Genome, R: number, t: number, dance
   const drawHat = (type: string) => {
     if (!type || type === "none") return;
     if (type === "cap") {
-      setMat([230, 70, 90]); p.push(); p.translate(0, -R * 0.82, 0); p.scale(1.15, 0.78, 1.15); p.sphere(R * 0.56, 22, 16); p.pop();
-      setMat([205, 52, 72]); p.push(); p.translate(0, -R * 0.5, R * 0.62); p.rotateX(0.15); p.ellipsoid(R * 0.42, R * 0.06, R * 0.3, 16, 8); p.pop();
+      setMat([230, 70, 90]); p.push(); p.translate(0, -R * 0.74, 0); p.scale(1.16, 0.82, 1.16); p.sphere(R * 0.58, 22, 16); p.pop();
+      // Visor: projects forward from the brow like a real cap peak (not an embedded slot).
+      setMat([205, 52, 72]); p.push(); p.translate(0, -R * 0.34, R * 0.9); p.rotateX(0.36); p.ellipsoid(R * 0.5, R * 0.07, R * 0.44, 18, 8); p.pop();
     } else if (type === "party") {
       setMat([232, 92, 200]); p.push(); p.translate(0, -R * 1.5, 0); p.rotateZ(Math.PI); p.cone(R * 0.42, R * 1.0, 20, 1, true); p.pop(); ball(0, -R * 2.02, 0, R * 0.11, [255, 240, 120]);
     } else if (type === "tophat") {

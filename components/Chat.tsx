@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Genome } from "@/lib/genome";
 import Certificate, { type CertificateData } from "./Certificate";
+import GardenerAvatar from "./GardenerAvatar";
 
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 
@@ -103,14 +104,19 @@ export default function Chat({
 
   return (
     <div className="glass flex h-full flex-col rounded-3xl">
+      {/* Gardener profile (full 3D) */}
+      <div className="flex items-center gap-2.5 border-b border-black/5 px-4 py-2.5">
+        <GardenerAvatar size={44} />
+        <div className="flex flex-col leading-tight">
+          <span className="font-display text-sm text-zinc-700">The Gardener</span>
+          <span className="text-[10px] text-zinc-400">{aiLabel ?? "tending the garden…"}</span>
+        </div>
+      </div>
       <div
         ref={scrollRef}
         className="flex-1 space-y-3 overflow-y-auto p-4"
         style={{ scrollbarWidth: "thin" }}
       >
-        {aiLabel && (
-          <div className="text-center text-[10px] text-zinc-400">{aiLabel}</div>
-        )}
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
             <span
