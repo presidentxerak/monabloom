@@ -45,7 +45,12 @@ function rotateHue(c: RGB, deg: number): RGB {
 
 interface PetalVar { len: number; wid: number; hueShift: number; tilt: number; }
 interface Projectile { action: FeedSignal["action"]; t: number; }
-interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; col: RGB; }
+interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; col: RGB; tw: number; sz: number; }
+
+const SPARKLE_COLORS: RGB[] = [
+  [255, 255, 255], [255, 233, 168], [255, 179, 230], [217, 179, 255],
+  [179, 240, 255], [201, 255, 217], [255, 210, 120],
+];
 
 function computeRig(dance: number, t: number) {
   let bobY = Math.sin(t * 1.6) * 0.05;
@@ -128,40 +133,66 @@ export default function FlowerCanvas({
 
         const drawHat = (R: number, type: string) => {
           if (!type || type === "none") return;
-          const top = -R;
           if (type === "cap") {
-            setMat([230, 70, 90]); p.push(); p.translate(0, top + R * 0.18, 0); p.scale(1, 0.62, 1); p.sphere(R * 0.66, 20, 16); p.pop();
-            p.push(); p.translate(0, top + R * 0.28, R * 0.55); p.rotateX(-0.25); setMat([210, 55, 75]); p.ellipsoid(R * 0.5, R * 0.07, R * 0.36, 16, 8); p.pop();
+            // Dome hugging the crown of the head + forward brim.
+            setMat([230, 70, 90]);
+            p.push(); p.translate(0, -R * 0.7, 0); p.scale(1.02, 0.6, 1.02); p.sphere(R * 0.7, 22, 16); p.pop();
+            setMat([205, 52, 72]);
+            p.push(); p.translate(0, -R * 0.66, R * 0.55); p.rotateX(-0.35); p.ellipsoid(R * 0.5, R * 0.06, R * 0.34, 18, 8); p.pop();
           } else if (type === "party") {
-            setMat([230, 90, 200]); p.push(); p.translate(0, top - R * 0.45, 0); p.cone(R * 0.5, R * 1.4, 20, 1, true); p.pop();
-            ball(0, top - R * 1.15, 0, R * 0.14, [255, 240, 120]);
+            // Cone base sits on the head top (-R), apex up.
+            setMat([232, 92, 200]);
+            p.push(); p.translate(0, -R * 1.55, 0); p.cone(R * 0.44, R * 1.1, 22, 1, true); p.pop();
+            ball(0, -R * 2.12, 0, R * 0.12, [255, 240, 120]);
           } else if (type === "tophat") {
-            setMat([40, 36, 48]); p.push(); p.translate(0, top - R * 0.35, 0); p.cylinder(R * 0.5, R * 1.0, 22, 1); p.pop();
-            p.push(); p.translate(0, top + R * 0.12, 0); p.cylinder(R * 0.8, R * 0.1, 24, 1); p.pop();
+            setMat([40, 36, 48]);
+            p.push(); p.translate(0, -R * 1.5, 0); p.cylinder(R * 0.46, R * 1.0, 24, 1); p.pop();
+            p.push(); p.translate(0, -R * 1.0, 0); p.cylinder(R * 0.78, R * 0.1, 28, 1); p.pop();
           } else if (type === "crown") {
-            setMat([240, 195, 60]); p.push(); p.translate(0, top + R * 0.05, 0); p.torus(R * 0.5, R * 0.12, 20, 10); p.pop();
-            for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2; p.push(); p.translate(Math.cos(a) * R * 0.5, top - R * 0.1, Math.sin(a) * R * 0.5); p.cone(R * 0.1, R * 0.3, 8, 1, true); p.pop(); }
+            // Horizontal gold band around the head + upward spikes.
+            setMat([240, 195, 60]);
+            p.push(); p.translate(0, -R * 0.78, 0); p.rotateX(Math.PI / 2); p.torus(R * 0.62, R * 0.1, 24, 10); p.pop();
+            for (let k = 0; k < 6; k++) {
+              const a = (k / 6) * Math.PI * 2;
+              p.push(); p.translate(Math.cos(a) * R * 0.62, -R * 0.95, Math.sin(a) * R * 0.62); p.cone(R * 0.09, R * 0.26, 10, 1, true); p.pop();
+            }
           } else if (type === "beret") {
-            setMat([60, 70, 140]); p.push(); p.translate(0, top + R * 0.12, -R * 0.05); p.rotateZ(0.2); p.scale(1.1, 0.45, 1.1); p.sphere(R * 0.6, 20, 14); p.pop();
-            ball(R * 0.15, top - R * 0.02, 0, R * 0.07, [60, 70, 140]);
+            setMat([60, 70, 140]);
+            p.push(); p.translate(0, -R * 0.72, -R * 0.08); p.rotateZ(0.22); p.scale(1.18, 0.42, 1.18); p.sphere(R * 0.62, 22, 14); p.pop();
+            ball(R * 0.22, -R * 0.82, -R * 0.05, R * 0.07, [60, 70, 140]);
           }
         };
 
         const drawGlasses = (R: number, type: string) => {
           if (!type || type === "none") return;
-          const ey = -R * 0.04, ex = R * 0.32, z = surfZ(R, ex, ey, R * 0.04);
-          const dark: RGB = [25, 22, 32];
+          // Lenses sit exactly on the eyes; everything faces the camera (+z).
+          const ey = -R * 0.05, ex = R * 0.3;
+          const lensZ = surfZ(R, ex, ey, R * 0.05);
+          const bridgeZ = surfZ(R, 0, ey, R * 0.05);
+          const dark: RGB = [22, 20, 30];
+          const bridge = (col: RGB, w: number) => { p.push(); p.translate(0, ey, bridgeZ); setMat(col, 120, 40); p.box(w, R * 0.04, R * 0.05); p.pop(); };
           if (type === "sun" || type === "thug") {
             const box = type === "thug";
-            for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, z); setMat(dark, 180, 60); if (box) p.box(R * 0.32, R * 0.2, R * 0.06); else p.ellipsoid(R * 0.18, R * 0.13, R * 0.05, 16, 10); p.pop(); }
-            p.push(); p.translate(0, ey - R * 0.02, z); setMat(dark); p.box(R * 0.18, R * 0.04, R * 0.05); p.pop();
+            for (const sx of [-1, 1]) {
+              p.push(); p.translate(sx * ex, ey, lensZ); setMat(dark, 220, 90);
+              if (box) p.box(R * 0.3, R * 0.2, R * 0.05); else p.ellipsoid(R * 0.17, R * 0.13, R * 0.04, 18, 12);
+              p.pop();
+            }
+            bridge(dark, R * 0.2);
           } else if (type === "round") {
-            for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, z); p.rotateX(Math.PI / 2); setMat(dark); p.torus(R * 0.15, R * 0.03, 18, 8); p.pop(); }
-            p.push(); p.translate(0, ey, z); setMat(dark); p.box(R * 0.14, R * 0.03, R * 0.04); p.pop();
+            for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat(dark); p.torus(R * 0.14, R * 0.028, 22, 10); p.pop(); }
+            bridge(dark, R * 0.14);
           } else if (type === "heart") {
-            for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, z); p.rotateX(Math.PI / 2); setMat([255, 80, 130]); p.torus(R * 0.15, R * 0.045, 18, 8); p.pop(); }
+            for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, lensZ); setMat([255, 80, 130], 160, 50); p.torus(R * 0.14, R * 0.04, 22, 10); p.pop(); }
+            bridge([255, 80, 130], R * 0.12);
           } else if (type === "star") {
-            for (const sx of [-1, 1]) { p.push(); p.translate(sx * ex, ey, z); p.rotateZ(Math.PI / 4); setMat([255, 215, 70]); p.box(R * 0.2, R * 0.2, R * 0.05); p.pop(); }
+            for (const sx of [-1, 1]) {
+              p.push(); p.translate(sx * ex, ey, lensZ); setMat([255, 214, 70], 180, 60);
+              p.push(); p.box(R * 0.26, R * 0.06, R * 0.05); p.pop();
+              p.push(); p.box(R * 0.06, R * 0.26, R * 0.05); p.pop();
+              p.pop();
+            }
+            bridge([255, 214, 70], R * 0.12);
           }
         };
 
@@ -241,9 +272,15 @@ export default function FlowerCanvas({
           const pw = powerRef.current;
           if (pw && pw.id !== lastPowerId) {
             lastPowerId = pw.id;
-            for (let i = 0; i < 40; i++) {
-              const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI - Math.PI / 2, sp = 2 + Math.random() * 4;
-              particles.push({ x: 0, y: 0, z: 0, vx: Math.cos(a) * Math.cos(e) * sp, vy: Math.sin(e) * sp - 1, vz: Math.sin(a) * Math.cos(e) * sp, life: 1, col: hslToRgb(Math.random() * 360, 0.9, 0.62) });
+            for (let i = 0; i < 70; i++) {
+              const a = Math.random() * Math.PI * 2;
+              const sp = 0.6 + Math.random() * 2.4;
+              particles.push({
+                x: (Math.random() - 0.5) * 2, y: -1 + Math.random() * 2, z: (Math.random() - 0.5) * 2,
+                vx: Math.cos(a) * sp, vy: -(0.6 + Math.random() * 1.6), vz: Math.sin(a) * sp,
+                life: 1 + Math.random() * 0.4, col: SPARKLE_COLORS[(Math.random() * SPARKLE_COLORS.length) | 0],
+                tw: Math.random() * Math.PI * 2, sz: 0.6 + Math.random() * 0.9,
+              });
             }
           }
 
@@ -346,13 +383,23 @@ export default function FlowerCanvas({
             p.pop();
           }
 
-          // Power particles.
+          // Power particles — twinkling sparkle-stars that float up like fairy dust.
           for (let i = particles.length - 1; i >= 0; i--) {
             const pt = particles[i];
-            pt.x += pt.vx; pt.y += pt.vy; pt.z += pt.vz; pt.vy += 0.12; pt.life -= 0.02;
+            pt.x += pt.vx * 0.6; pt.y += pt.vy * 0.6; pt.z += pt.vz * 0.6;
+            pt.vy += 0.02; pt.vx *= 0.97; pt.vz *= 0.97; // gentle drift + slowdown
+            pt.life -= 0.011;
             if (pt.life <= 0) { particles.splice(i, 1); continue; }
-            p.push(); p.translate(pt.x * R * 0.18, pt.y * R * 0.18, pt.z * R * 0.18);
-            setMat(pt.col, 160, 40); p.sphere(R * 0.07 * pt.life + R * 0.02, 8, 6); p.pop();
+            const tw = 0.55 + 0.45 * Math.sin(danceT * 9 + pt.tw);
+            const s = (R * 0.06 * pt.sz * Math.min(1, pt.life) * tw) + R * 0.008;
+            p.push();
+            p.translate(pt.x * R * 0.22, pt.y * R * 0.22, pt.z * R * 0.22);
+            p.rotateZ(pt.tw + danceT);
+            setMat(pt.col, 220, 90);
+            p.push(); p.box(s * 2.6, s * 0.5, s * 0.5); p.pop(); // star arms
+            p.push(); p.box(s * 0.5, s * 2.6, s * 0.5); p.pop();
+            p.push(); p.sphere(s * 0.8, 6, 6); p.pop(); // bright centre
+            p.pop();
           }
 
           p.pop();

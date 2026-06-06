@@ -1,17 +1,26 @@
-// 20 fake players, each with one generated flower listed in The Garden, so the
-// market feels alive alongside flowers from real players. Deterministic: the
-// same handle always yields the same flower + address.
+// 70 fake players, each with one generated flower listed in The Garden, so the
+// market feels alive alongside flowers from real players. Deterministic.
 
 import { genomeFromSeed, nomPoetique } from "./flower-random";
 import { seedFromHex } from "./prng";
+import { HATS, GLASSES, SHOES } from "./genome";
 import type { FlowerListing } from "./collection";
 
-const HANDLES = [
-  "neuno", "petalpope", "bloomgrl", "mossy", "0xfern", "lumina",
-  "violetvox", "sporeling", "dewdrop", "cosmosly", "honeyhz", "nyx",
-  "terramint", "glowbean", "saffron", "tidalix", "emberlee", "fauna",
-  "zephyrr", "marigold",
+const PREFIX = [
+  "neon", "petal", "bloom", "moss", "fern", "luma", "violet", "spore", "dew",
+  "cosmo", "honey", "nyx", "terra", "glow", "saffron", "tidal", "ember", "fauna",
+  "zephyr", "mari", "aero", "brio", "clover", "dahlia", "echo", "flora", "gaia",
+  "halo", "iris", "jade", "koi", "lotus", "mauve", "nova", "onyx", "poppy",
+  "quill", "rune", "sage", "thorn", "umbra", "vesper", "willow", "xen", "yara",
+  "zinnia", "aster", "bramble", "cinder", "drift",
 ];
+const SUFFIX = [
+  "bloom", "grl", "mon", "ly", "xo", "ish", "wave", "dust", "light", "core",
+  "pop", "bee", "fox", "muse", "leaf", "star", "mint", "glow", "byte", "puff",
+  "vibe", "song", "wisp", "lux", "nyx", "fizz", "drift", "spark", "haze", "reef",
+];
+
+const COUNT = 70;
 
 function fakeAddress(handle: string): string {
   let hex = "";
@@ -23,10 +32,20 @@ function fakeAddress(handle: string): string {
   return `0x${hex.slice(0, 40)}`;
 }
 
-export const PLAYER_FLOWERS: FlowerListing[] = HANDLES.map((handle, i) => {
+const seen = new Set<string>();
+
+export const PLAYER_FLOWERS: FlowerListing[] = Array.from({ length: COUNT }, (_, i) => {
+  let handle = PREFIX[i % PREFIX.length] + SUFFIX[(i * 13) % SUFFIX.length];
+  if (seen.has(handle)) handle += i;
+  seen.add(handle);
+
   const genome = genomeFromSeed(`${handle}-bloom-${i}`);
-  const tierBump = seedFromHex(handle) % 5; // a little price spread
-  const price = +(0.04 + tierBump * 0.06 + (i % 4) * 0.03).toFixed(2);
+  // Deterministic outfits give the market real variety (some plain, some decked).
+  genome.chapeau = HATS[seedFromHex(handle + "hat") % HATS.length];
+  genome.lunettes = GLASSES[seedFromHex(handle + "glasses") % GLASSES.length];
+  genome.chaussures = SHOES[seedFromHex(handle + "shoes") % SHOES.length];
+
+  const price = +(0.03 + (seedFromHex(handle) % 40) * 0.012).toFixed(2);
   return {
     id: `player-${i}`,
     name: nomPoetique(genome.seedHash),
