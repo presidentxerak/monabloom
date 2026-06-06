@@ -23,7 +23,7 @@ export default function GardenerAvatar({ size = 44 }: { size?: number }) {
       if (!mounted || !container) return;
 
       const sketch = (p: p5) => {
-        const R = size * 0.26;
+        const R = size * 0.42;
         const skin: RGB = [255, 216, 186];
         const straw: RGB = [224, 188, 110];
         const strawDk: RGB = [198, 160, 86];
