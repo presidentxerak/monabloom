@@ -10,7 +10,7 @@ import { parseJardinierReply, type Delta } from "./genome";
 
 export interface LlmMessage { role: "user" | "assistant"; content: string }
 
-const MAX_TOKENS = 400;
+const MAX_TOKENS = 600;
 
 function timeoutSignal(ms = 11000): AbortSignal | undefined {
   try {

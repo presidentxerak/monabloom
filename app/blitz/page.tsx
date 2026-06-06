@@ -1,0 +1,128 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import BlitzGarden, { type BlitzFlower } from "@/components/BlitzGarden";
+import FlowerPreview from "@/components/FlowerPreview";
+import RarityBadge from "@/components/RarityBadge";
+import { PLAYER_FLOWERS } from "@/lib/fake-players";
+import { loadCollection } from "@/lib/collection";
+import { computeRarity } from "@/lib/rarity";
+import { tokenLabel, rank } from "@/lib/identity";
+import { nomPoetique } from "@/lib/flower-random";
+import { loadChat, postChat, type ChatMsg } from "@/lib/social";
+
+export default function BlitzGardenPage() {
+  const router = useRouter();
+  const [flowers, setFlowers] = useState<BlitzFlower[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [input, setInput] = useState("");
+
+  useEffect(() => {
+    const owned = loadCollection()
+      .filter((f) => f.owned)
+      .map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "you" }));
+    const players = PLAYER_FLOWERS.slice(0, 30).map((f) => ({ id: f.id, genome: f.genome, owner: f.owner ?? "player" }));
+    setFlowers([...owned, ...players]);
+    setChat(loadChat());
+  }, []);
+
+  const selected = useMemo(() => flowers.find((f) => f.id === selectedId) ?? null, [flowers, selectedId]);
+  const selRarity = selected ? computeRarity(selected.genome) : null;
+
+  function send() {
+    const text = input.trim();
+    if (!text) return;
+    setChat(postChat(text));
+    setInput("");
+  }
+
+  function viewIn3D(g: BlitzFlower) {
+    try { sessionStorage.setItem("fm_view", JSON.stringify(g.genome)); } catch {}
+    router.push("/play");
+  }
+
+  return (
+    <div className="flex h-screen flex-col overflow-hidden text-zinc-800">
+      {/* Nav */}
+      <nav className="flex items-center justify-between border-b border-black/10 bg-white/70 px-4 py-3 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="brand-title font-display text-lg">
+            FLOWER<span className="brand-dot">MON</span>
+          </Link>
+          <span className="rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500">
+            Blitz Garden
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
+          <Link href="/play" className="rounded-full bg-zinc-900 px-3 py-1.5 font-medium text-white">Play</Link>
+        </div>
+      </nav>
+
+      <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* 3D garden */}
+        <section className="relative min-h-[55vh] flex-1">
+          <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-white/70 px-3 py-1 text-[11px] text-zinc-500 backdrop-blur-sm">
+            scroll to wander · click a flower to inspect
+          </div>
+          <BlitzGarden flowers={flowers} selectedId={selectedId} onSelect={setSelectedId} />
+
+          {/* Inspector */}
+          {selected && selRarity && (
+            <div className="absolute bottom-3 left-1/2 z-10 w-[88%] max-w-sm -translate-x-1/2 rounded-2xl border border-black/10 bg-white/90 p-3 shadow-lg backdrop-blur">
+              <div className="flex items-center gap-3">
+                <FlowerPreview genome={selected.genome} size={72} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-display text-sm text-zinc-800">
+                    {nomPoetique(selected.genome.seedHash)}{" "}
+                    <span className="text-zinc-400">{tokenLabel(selected.genome.seedHash)}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <RarityBadge rarity={selRarity} small />
+                    <span className="text-[10px] text-zinc-500">Rank #{rank(selected.genome)}</span>
+                    <span className="text-[10px] text-zinc-400">@{selected.owner}</span>
+                  </div>
+                </div>
+                <button onClick={() => viewIn3D(selected)} className="rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-medium text-white">
+                  View
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Social window */}
+        <aside className="flex h-[40vh] w-full flex-col border-t border-black/10 bg-white/70 backdrop-blur lg:h-auto lg:w-[340px] lg:border-l lg:border-t-0">
+          <div className="border-b border-black/10 px-4 py-2 font-display text-sm text-zinc-700">
+            Garden chat
+          </div>
+          <div className="flex-1 space-y-2 overflow-y-auto p-3" style={{ scrollbarWidth: "thin" }}>
+            {chat.map((m) => (
+              <div key={m.id} className="text-sm">
+                <span className="font-display text-[11px] text-fuchsia-500">@{m.owner}</span>{" "}
+                <span className="text-zinc-700">{m.text}</span>
+              </div>
+            ))}
+          </div>
+          <form
+            onSubmit={(e) => { e.preventDefault(); send(); }}
+            className="flex gap-2 border-t border-black/10 p-3"
+          >
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="say hi to the garden..."
+              className="flex-1 rounded-full bg-white/80 px-4 py-2 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:bg-white"
+            />
+            <button type="submit" className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white">
+              Send
+            </button>
+          </form>
+        </aside>
+      </div>
+    </div>
+  );
+}

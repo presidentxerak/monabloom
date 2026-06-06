@@ -326,7 +326,7 @@ function BreedTab({
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm text-zinc-500">
-        Pick <span className="text-zinc-800">two flowers</span> to cross — their
+        Pick <span className="text-zinc-800">two flowers</span> to cross. Their
         child inherits their traits.
       </p>
 
@@ -457,7 +457,7 @@ export default function GardenPage() {
     };
     persist([...collection, newFlower]);
     getSoundEngine().playBloom();
-    showToast(`${name} has bloomed — ${rarity.tier}!`);
+    showToast(`${name} has bloomed, ${rarity.tier}!`);
     setTab("collection");
   }
 
@@ -522,7 +522,7 @@ export default function GardenPage() {
     } catch {
       // ignore
     }
-    router.push("/");
+    router.push("/play");
   }
 
   function handleBuy(item: FlowerListing) {
@@ -600,8 +600,11 @@ export default function GardenPage() {
             FLOWER<span className="brand-dot">MON</span>
           </Link>
           <span className="hidden rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500 sm:inline-block">
-            The Garden
+            Cards
           </span>
+          <Link href="/blitz" className="hidden rounded-full border border-black/10 bg-white/60 px-2.5 py-0.5 text-xs text-zinc-500 transition hover:bg-white sm:inline-block">
+            Blitz Garden
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <SoundEngine genome={dummyGenome} />

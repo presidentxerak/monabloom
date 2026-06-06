@@ -22,7 +22,7 @@ export default async function FleurPage({
           No valid flower could be resurrected from this transaction.
         </p>
         <Link href="/" className="text-sm underline text-zinc-600">
-          ← back to the garden
+          ← back home
         </Link>
       </main>
     );

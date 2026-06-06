@@ -1,176 +1,140 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Chat from "@/components/Chat";
-import FlowerCanvas from "@/components/FlowerCanvas";
-import type { FeedSignal, PowerSignal } from "@/components/FlowerCanvas";
-import SoundEngine from "@/components/SoundEngine";
-import FeedBar, { type WardrobeTab } from "@/components/FeedBar";
-import Wardrobe from "@/components/Wardrobe";
-import MusicPlayer from "@/components/MusicPlayer";
-import { GenomeSchema, genomeDefaut, type Genome } from "@/lib/genome";
-import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
-import { addOwnedGenome } from "@/lib/collection";
-import { DANCES, GENRE_DANCE } from "@/lib/cosmetics";
+import FlowerPreview from "@/components/FlowerPreview";
+import RarityBadge from "@/components/RarityBadge";
+import { genomeFromSeed } from "@/lib/flower-random";
 import { computeRarity } from "@/lib/rarity";
 import { tokenLabel, rank } from "@/lib/identity";
 import { nomPoetique } from "@/lib/flower-random";
-import { hexToRgb } from "@/lib/flower-engine";
-import { getSoundEngine } from "@/lib/sound";
+import type { Genome } from "@/lib/genome";
 
-function pastel(hex: string): string {
-  const [r, g, b] = hexToRgb(hex).map((v) => Math.round(v + (255 - v) * 0.84));
-  return `rgb(${r}, ${g}, ${b})`;
-}
+const SAMPLE_SEEDS = [
+  "aurora-crown-bloom",
+  "violet-thug-spark",
+  "golden-party-dawn",
+  "mint-round-reverie",
+  "cobalt-star-ember",
+  "rose-tophat-tide",
+];
 
-export default function Home() {
-  const [genome, setGenome] = useState<Genome>(() => genomeDefaut());
-  const [feedNote, setFeedNote] = useState<string | null>(null);
-  const [feedSignal, setFeedSignal] = useState<FeedSignal | null>(null);
-  const [powerSignal, setPowerSignal] = useState<PowerSignal | null>(null);
-  const [dance, setDance] = useState(0);
-  const [wardrobe, setWardrobe] = useState<WardrobeTab | null>(null);
-  const [music, setMusic] = useState(false);
+const SAMPLES: Genome[] = SAMPLE_SEEDS.map((s, i) => {
+  const g = genomeFromSeed(s);
+  // Showcase a bit of variety in accessories.
+  const hats = ["crown", "none", "party", "none", "beret", "tophat"] as const;
+  const glasses = ["none", "thug", "none", "round", "star", "none"] as const;
+  return { ...g, chapeau: hats[i], lunettes: glasses[i] };
+});
 
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("fm_view");
-      if (raw) {
-        sessionStorage.removeItem("fm_view");
-        const parsed = GenomeSchema.safeParse(JSON.parse(raw));
-        if (parsed.success) setGenome(parsed.data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+const TRAITS = [
+  { k: "Petals", v: "3 to 12 arms, each flower different" },
+  { k: "Colours", v: "two live gradient tones" },
+  { k: "Mood", v: "joyful, dreamy, playful, serene, melancholic" },
+  { k: "Petal shape", v: "oval, diamond, ring, pointed and more" },
+  { k: "Accessories", v: "hats, glasses, sneakers" },
+  { k: "Motion", v: "spin speed and overall size" },
+];
 
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty("--bloom-a", genome.couleurA);
-    root.style.setProperty("--bloom-b", genome.couleurB);
-    root.style.setProperty("--bg-pastel", pastel(genome.couleurB));
-  }, [genome.couleurA, genome.couleurB]);
-
-  const identity = useMemo(() => {
-    const rarity = computeRarity(genome);
-    return {
-      name: nomPoetique(genome.seedHash),
-      token: tokenLabel(genome.seedHash),
-      tier: rarity.tier,
-      color: rarity.color,
-      rank: rank(genome),
-    };
-  }, [genome]);
-
-  function note(msg: string, ms = 2600) {
-    setFeedNote(msg);
-    setTimeout(() => setFeedNote(null), ms);
-  }
-
-  function handleFeed(action: FeedAction) {
-    setGenome((g) => feedFlower(g, action));
-    setFeedSignal({ action, id: Date.now() });
-    const meta = FEED_ACTIONS.find((a) => a.id === action);
-    if (meta) note(meta.reply);
-    const engine = getSoundEngine();
-    if (action === "eau" || action === "pouvoir") engine.playBloom();
-    else engine.playSparkle();
-  }
-
-  function handlePower() {
-    setPowerSignal({ id: Date.now() });
-    setGenome((g) => feedFlower(g, "pouvoir"));
-    getSoundEngine().playSparkle();
-    note("A burst of power!");
-  }
-
-  function handleDance() {
-    const next = (dance + 1) % DANCES.length;
-    setDance(next);
-    note(`Dance: ${DANCES[next].name}`);
-  }
-
-  function handleSave() {
-    const flower = addOwnedGenome(genome);
-    getSoundEngine().playSell();
-    note(`Saved "${flower.name}" ${identity.token} to The Garden!`, 3200);
-  }
-
-  function handleGenre(id: string) {
-    // Beat-y genres make her dance; calm genres settle her back to idle.
-    const d = GENRE_DANCE[id] ?? 0;
-    setDance(d);
-    if (d > 0) note(`Dancing to ${id} — ${DANCES[d].name}!`);
-  }
-
+export default function Landing() {
   return (
-    <main className="relative flex min-h-screen flex-col gap-3 p-3 lg:h-screen lg:flex-row lg:overflow-hidden lg:gap-4 lg:p-4">
-      {/* Flower stage */}
-      <section className="relative flex min-h-[60vh] flex-1 flex-col items-center justify-center overflow-hidden rounded-3xl lg:min-h-0">
-        <header className="absolute left-3 top-3 z-10 flex items-center gap-2">
-          <h1 className="brand-title font-display text-lg">
-            FLOWER<span className="brand-dot">MON</span>
-          </h1>
-          <Link href="/garden" className="pill rounded-full px-3 py-1 text-xs font-medium">
-            The Garden
-          </Link>
-        </header>
-
-        {/* Identity card */}
-        <div className="absolute left-1/2 top-3 z-10 -translate-x-1/2 text-center">
-          <div className="glass inline-flex flex-col items-center rounded-2xl px-4 py-1.5">
-            <span className="font-display text-sm tracking-wide text-zinc-800">
-              {identity.name} <span className="text-zinc-400">{identity.token}</span>
-            </span>
-            <span className="text-[10px] uppercase tracking-wider" style={{ color: identity.color }}>
-              {identity.tier} · Rank #{identity.rank}
-            </span>
-          </div>
+    <main className="min-h-screen text-zinc-800">
+      {/* Nav */}
+      <nav className="flex items-center justify-between px-5 py-4">
+        <span className="brand-title font-display text-lg">
+          FLOWER<span className="brand-dot">MON</span>
+        </span>
+        <div className="flex items-center gap-2 text-xs">
+          <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
+          <Link href="/blitz" className="pill rounded-full px-3 py-1.5">Blitz Garden</Link>
+          <Link href="/play" className="rounded-full bg-zinc-900 px-3 py-1.5 font-medium text-white">Play</Link>
         </div>
+      </nav>
 
-        <div className="absolute right-3 top-3 z-10">
-          <SoundEngine genome={genome} />
-        </div>
-
-        <div className="absolute inset-0">
-          <FlowerCanvas genome={genome} feed={feedSignal} dance={dance} power={powerSignal} />
-        </div>
-
-        <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2">
-          {feedNote && (
-            <span className="rounded-full bg-black/45 px-3 py-1 text-xs text-white backdrop-blur-sm">
-              {feedNote}
-            </span>
-          )}
-          <div className="pointer-events-auto">
-            <FeedBar
-              onFeed={handleFeed}
-              onPower={handlePower}
-              onDance={handleDance}
-              onMusic={() => setMusic(true)}
-              onSave={handleSave}
-              onWardrobe={(tab) => setWardrobe(tab)}
-            />
-          </div>
+      {/* Hero */}
+      <section className="relative flex flex-col items-center px-5 pb-10 pt-10 text-center">
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-70"
+          style={{ background: "radial-gradient(circle at 50% 30%, #ffd6f5 0%, transparent 55%), radial-gradient(circle at 70% 60%, #cfd6ff 0%, transparent 55%)" }} />
+        <h1 className="font-display text-5xl tracking-tight text-zinc-900 sm:text-7xl">Flowermon</h1>
+        <p className="mt-2 font-display text-2xl text-fuchsia-500 sm:text-3xl">フラワーモン</p>
+        <p className="mt-6 max-w-xl text-sm leading-relaxed text-zinc-600">
+          Grow living 3D flower characters just by talking to them. Collect, dress,
+          breed and trade them on the Monad testnet. Every Flowermon is unique,
+          generated from an on chain seed, with its own name, rank and rarity.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3 text-sm">
+          <Link href="/play" className="rounded-full bg-zinc-900 px-5 py-2.5 font-medium text-white transition hover:opacity-90">Grow a Flower</Link>
+          <Link href="/cards" className="pill rounded-full px-5 py-2.5">Browse Cards</Link>
+          <Link href="/blitz" className="pill rounded-full px-5 py-2.5">Enter Blitz Garden</Link>
         </div>
       </section>
 
-      {/* Dialogue */}
-      <section className="flex h-[40vh] w-full flex-col lg:h-auto lg:w-[380px]">
-        <Chat genome={genome} onGenome={setGenome} />
+      {/* Sample flower cards */}
+      <section className="mx-auto max-w-5xl px-5 py-8">
+        <h2 className="mb-5 text-center font-display text-xl text-zinc-800">Meet a few of them</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {SAMPLES.map((g, i) => {
+            const r = computeRarity(g);
+            return (
+              <div key={i} className="flex flex-col items-center rounded-2xl border border-black/10 bg-white/70 p-4">
+                <FlowerPreview genome={g} size={150} />
+                <span className="mt-1 truncate font-display text-xs text-zinc-800">
+                  {nomPoetique(g.seedHash)} <span className="text-zinc-400">{tokenLabel(g.seedHash)}</span>
+                </span>
+                <div className="mt-1 flex items-center gap-2">
+                  <RarityBadge rarity={r} small />
+                  <span className="text-[10px] text-zinc-400">Rank #{rank(g)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
-      {wardrobe && (
-        <Wardrobe
-          genome={genome}
-          initialTab={wardrobe}
-          onChange={(patch) => setGenome((g) => ({ ...g, ...patch }))}
-          onClose={() => setWardrobe(null)}
-        />
-      )}
-      {music && <MusicPlayer onClose={() => setMusic(false)} onGenre={handleGenre} />}
+      {/* Rarity traits */}
+      <section className="mx-auto max-w-5xl px-5 py-10">
+        <h2 className="mb-2 text-center font-display text-xl text-zinc-800">Rarity and traits</h2>
+        <p className="mx-auto mb-6 max-w-2xl text-center text-sm text-zinc-600">
+          Each flower carries a set of traits. Bolder, rarer combinations push it up
+          the rarity ladder, from Common to Legendary. The rank you see on every
+          card is computed from those traits.
+        </p>
+        <div className="mb-6 flex flex-wrap justify-center gap-2">
+          {(["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const).map((t, i) => (
+            <span key={t} className="rounded-full border px-3 py-1 text-xs font-medium"
+              style={{ color: ["#7a8090", "#16b572", "#1f8fff", "#a64bff", "#e0a400"][i], borderColor: ["#7a8090", "#16b572", "#1f8fff", "#a64bff", "#e0a400"][i] + "66" }}>
+              {t}
+            </span>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {TRAITS.map((t) => (
+            <div key={t.k} className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="font-display text-sm text-zinc-800">{t.k}</div>
+              <div className="mt-1 text-xs text-zinc-500">{t.v}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Monad chain */}
+      <section className="mx-auto max-w-3xl px-5 py-10 text-center">
+        <h2 className="mb-2 font-display text-xl text-zinc-800">Built on Monad</h2>
+        <p className="mx-auto max-w-2xl text-sm leading-relaxed text-zinc-600">
+          Monad is a fast, EVM compatible blockchain. Flowermon runs on its testnet,
+          where the native currency is MON. When you plant a flower it is inscribed
+          forever in the calldata of a transaction, so the seed and traits live on
+          the chain. The code reads that seed and renders the exact same flower,
+          pixel for pixel, every time. You can save flowers to Cards, list them for
+          MON, breed two of them into a hybrid, and meet other owners in the Blitz
+          Garden.
+        </p>
+        <div className="mt-7 flex flex-wrap justify-center gap-3 text-sm">
+          <Link href="/play" className="rounded-full bg-zinc-900 px-5 py-2.5 font-medium text-white transition hover:opacity-90">Start growing</Link>
+          <Link href="/blitz" className="pill rounded-full px-5 py-2.5">Enter Blitz Garden</Link>
+        </div>
+      </section>
+
+      <footer className="px-5 py-8 text-center text-[11px] text-zinc-400">
+        Flowermon · generative 3D flowers on Monad testnet
+      </footer>
     </main>
   );
 }

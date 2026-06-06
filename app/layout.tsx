@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { DotGothic16 } from "next/font/google";
+import { Silkscreen } from "next/font/google";
 import "./globals.css";
 
-const display = DotGothic16({
+const display = Silkscreen({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
@@ -10,7 +10,7 @@ const display = DotGothic16({
 });
 
 export const metadata: Metadata = {
-  title: "Flowermon — grow your flower",
+  title: "Flowermon · grow your flower",
   description:
     "Create, collect and trade unique generative 3D flowers on Monad testnet.",
 };
@@ -22,7 +22,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={display.variable}>
-      <body className="min-h-screen text-zinc-800 antialiased">{children}</body>
+      <body className="min-h-screen font-display text-zinc-800 antialiased">
+        {children}
+      </body>
     </html>
   );
 }
