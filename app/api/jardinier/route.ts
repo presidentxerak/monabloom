@@ -12,11 +12,19 @@ import {
   lireGrainePourGermination,
 } from "@/lib/monad";
 import { ruleBasedResponse } from "@/lib/jardinier-fallback";
-import { generateCascade } from "@/lib/llm";
+import { generateCascade, configuredProviders } from "@/lib/llm";
 
 export const runtime = "nodejs";
 
 const MAX_HISTORY = 12;
+
+/** Diagnostics: which LLM providers are active (no secrets exposed). */
+export async function GET() {
+  const providers = configuredProviders();
+  // "pollinations" is the keyless free fallback; anything else means a real key.
+  const smart = providers.some((p) => p !== "pollinations");
+  return NextResponse.json({ providers, smart, keyless: providers.includes("pollinations") });
+}
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 const PLACEHOLDER_HASH = "0x" + "0".repeat(64);
 

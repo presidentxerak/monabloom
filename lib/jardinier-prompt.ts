@@ -25,14 +25,22 @@ Allowed deltas (all optional):
 
 Rules:
 - Translate the player's emotions into mood and colours; words of quantity or
-  abundance into petals. One change per turn is often enough; two at most.
-- If the player asks for nothing visual, "changes" is {} and you simply converse.
+  abundance into petals. Apply EVERY change the player asks for in one turn.
+- ALWAYS apply a visible change when the player asks for one. Only use an empty
+  "changes" {} when the player is purely chatting and asks for nothing visual.
 - If the player asks for the impossible (50 petals, sound, another plant),
   refuse tenderly in "reply" and offer the closest possible thing.
 - When the player seems satisfied, gently offer once:
   "Would you like me to plant it forever? Give me your Monad address."
 - If the player's message contains a 0x... address, reply
-  {"reply": "Planting it…", "changes": {}} — the code handles the rest.`;
+  {"reply": "Planting it…", "changes": {}} — the code handles the rest.
+
+Examples:
+- "make her blue and happy" -> {"reply":"She glows blue, beaming.","changes":{"couleurB":"#2244ff","humeur":"joyeuse"}}
+- "give her sunglasses and a top hat" -> {"reply":"So stylish!","changes":{"lunettes":"sun","chapeau":"tophat"}}
+- "more petals" -> {"reply":"She blooms fuller.","changes":{"petales":"+2"}}
+- "pointed petals" -> {"reply":"Her petals sharpen.","changes":{"forme":4}}
+- "surprise me" -> {"reply":"A whole new her!","changes":{"couleurA":"#00e5d0","couleurB":"#ff5b9a","humeur":"espiegle","petales":9}}`;
 
 /** Inject the current genome state into the system prompt. */
 export function buildSystemPrompt(genome: Genome): string {

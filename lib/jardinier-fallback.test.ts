@@ -44,6 +44,14 @@ describe("ruleBasedResponse — commands map to exact changes", () => {
     expect(ruleBasedResponse("what color is she?").changes.chapeau).toBeUndefined();
   });
 
+  it("understands looser synonyms", () => {
+    expect(ruleBasedResponse("make her smile").changes.humeur).toBe("joyeuse");
+    expect(ruleBasedResponse("she looks gloomy").changes.humeur).toBe("melancolique");
+    expect(ruleBasedResponse("chill vibes").changes.humeur).toBe("sereine");
+    expect(ruleBasedResponse("grow the flower").changes.petales).toBe("+2");
+    expect(ruleBasedResponse("make it smaller").changes.petales).toBe("-2");
+  });
+
   it("vague 'change <target>' commands always do something", () => {
     expect(ruleBasedResponse("change petals").changes.petales).toBeDefined();
 

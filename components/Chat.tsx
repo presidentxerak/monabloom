@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Genome } from "@/lib/genome";
 import Certificate, { type CertificateData } from "./Certificate";
 
@@ -29,7 +29,23 @@ export default function Chat({
   const [loading, setLoading] = useState(false);
   const [planting, setPlanting] = useState(false);
   const [cert, setCert] = useState<CertificateData | null>(null);
+  const [ai, setAi] = useState<{ smart: boolean; keyless: boolean } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/jardinier")
+      .then((r) => r.json())
+      .then((d) => setAi({ smart: !!d.smart, keyless: !!d.keyless }))
+      .catch(() => {});
+  }, []);
+
+  const aiLabel = ai
+    ? ai.smart
+      ? "✦ Smart AI on"
+      : ai.keyless
+        ? "✦ Free AI on"
+        : "Basic mode"
+    : null;
 
   const scrollDown = () => {
     requestAnimationFrame(() => {
@@ -92,6 +108,9 @@ export default function Chat({
         className="flex-1 space-y-3 overflow-y-auto p-4"
         style={{ scrollbarWidth: "thin" }}
       >
+        {aiLabel && (
+          <div className="text-center text-[10px] text-zinc-400">{aiLabel}</div>
+        )}
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
             <span

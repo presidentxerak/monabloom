@@ -1,7 +1,9 @@
 // LLM cascade. Tries providers in order until one returns a usable reply, so
 // the chatbot stays smart even after one provider's free tokens run out.
-// All providers are optional — only those with an API key set are attempted.
-// If every provider fails, the caller falls back to the rule-based gardener.
+//
+// Order: configured key-based providers first (best quality), then a KEYLESS
+// free provider (Pollinations) so the chatbot is intelligent out of the box
+// with no setup. If everything fails, the caller uses the rule-based gardener.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { parseJardinierReply, type Delta } from "./genome";
@@ -9,11 +11,10 @@ import { parseJardinierReply, type Delta } from "./genome";
 export interface LlmMessage { role: "user" | "assistant"; content: string }
 
 const MAX_TOKENS = 400;
-const TIMEOUT_MS = 12000;
 
-function timeoutSignal(): AbortSignal | undefined {
+function timeoutSignal(ms = 11000): AbortSignal | undefined {
   try {
-    return AbortSignal.timeout(TIMEOUT_MS);
+    return AbortSignal.timeout(ms);
   } catch {
     return undefined;
   }
@@ -22,8 +23,7 @@ function timeoutSignal(): AbortSignal | undefined {
 // ── Anthropic (Claude) via SDK ───────────────────────────────────────────────
 
 async function tryAnthropic(system: string, messages: LlmMessage[]): Promise<string> {
-  const key = process.env.ANTHROPIC_API_KEY!;
-  const client = new Anthropic({ apiKey: key });
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   const res = await client.messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
     max_tokens: MAX_TOKENS,
@@ -48,17 +48,25 @@ async function openaiCompat(
   messages: LlmMessage[],
   extraHeaders: Record<string, string> = {},
 ): Promise<string> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${key}`, ...extraHeaders },
-    body: JSON.stringify({
-      model,
-      max_tokens: MAX_TOKENS,
-      temperature: 0.85,
-      messages: [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
-    }),
-    signal: timeoutSignal(),
-  });
+  const msgs = [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))];
+  const call = (jsonMode: boolean) =>
+    fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}`, ...extraHeaders },
+      body: JSON.stringify({
+        model,
+        max_tokens: MAX_TOKENS,
+        temperature: 0.8,
+        messages: msgs,
+        ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+      }),
+      signal: timeoutSignal(),
+    });
+
+  // JSON mode forces valid JSON on providers that support it; retry without it
+  // for those that reject the parameter.
+  let res = await call(true);
+  if ((res.status === 400 || res.status === 422)) res = await call(false);
   if (!res.ok) throw new Error(`${label} ${res.status}`);
   const data = await res.json();
   const text = data?.choices?.[0]?.message?.content;
@@ -78,11 +86,8 @@ async function tryGemini(system: string, messages: LlmMessage[]): Promise<string
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
-        contents: messages.map((m) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }],
-        })),
-        generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.85 },
+        contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        generationConfig: { maxOutputTokens: MAX_TOKENS, temperature: 0.8, responseMimeType: "application/json" },
       }),
       signal: timeoutSignal(),
     },
@@ -94,32 +99,48 @@ async function tryGemini(system: string, messages: LlmMessage[]): Promise<string
   return String(text).trim();
 }
 
+// ── Pollinations — KEYLESS free fallback (works with no configuration) ────────
+
+async function tryPollinations(system: string, messages: LlmMessage[]): Promise<string> {
+  if (process.env.FLOWERMON_DISABLE_KEYLESS) throw new Error("keyless disabled");
+  const res = await fetch("https://text.pollinations.ai/openai", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      model: process.env.POLLINATIONS_MODEL || "openai",
+      temperature: 0.8,
+      messages: [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
+    }),
+    signal: timeoutSignal(9000),
+  });
+  if (!res.ok) throw new Error(`pollinations ${res.status}`);
+  const data = await res.json().catch(() => null);
+  const text = data?.choices?.[0]?.message?.content ?? (typeof data === "string" ? data : "");
+  if (!text) throw new Error("pollinations empty");
+  return String(text).trim();
+}
+
 // ── Provider order ───────────────────────────────────────────────────────────
 
 interface Provider { name: string; key: () => string | undefined; gen: (s: string, m: LlmMessage[]) => Promise<string>; }
 
 const PROVIDERS: Provider[] = [
   { name: "anthropic", key: () => process.env.ANTHROPIC_API_KEY, gen: tryAnthropic },
-  {
-    name: "cerebras", key: () => process.env.CEREBRAS_API_KEY,
-    gen: (s, m) => openaiCompat("cerebras", "https://api.cerebras.ai/v1", process.env.CEREBRAS_API_KEY!, process.env.CEREBRAS_MODEL || "llama-3.3-70b", s, m),
-  },
-  {
-    name: "groq", key: () => process.env.GROQ_API_KEY,
-    gen: (s, m) => openaiCompat("groq", "https://api.groq.com/openai/v1", process.env.GROQ_API_KEY!, process.env.GROQ_MODEL || "llama-3.3-70b-versatile", s, m),
-  },
+  { name: "cerebras", key: () => process.env.CEREBRAS_API_KEY, gen: (s, m) => openaiCompat("cerebras", "https://api.cerebras.ai/v1", process.env.CEREBRAS_API_KEY!, process.env.CEREBRAS_MODEL || "llama-3.3-70b", s, m) },
+  { name: "groq", key: () => process.env.GROQ_API_KEY, gen: (s, m) => openaiCompat("groq", "https://api.groq.com/openai/v1", process.env.GROQ_API_KEY!, process.env.GROQ_MODEL || "llama-3.3-70b-versatile", s, m) },
   { name: "gemini", key: () => process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY, gen: tryGemini },
-  {
-    name: "openrouter", key: () => process.env.OPENROUTER_API_KEY,
-    gen: (s, m) => openaiCompat("openrouter", "https://openrouter.ai/api/v1", process.env.OPENROUTER_API_KEY!, process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free", s, m, { "HTTP-Referer": "https://flowermon.app", "X-Title": "Flowermon" }),
-  },
-  {
-    name: "mistral", key: () => process.env.MISTRAL_API_KEY,
-    gen: (s, m) => openaiCompat("mistral", "https://api.mistral.ai/v1", process.env.MISTRAL_API_KEY!, process.env.MISTRAL_MODEL || "mistral-small-latest", s, m),
-  },
+  { name: "openrouter", key: () => process.env.OPENROUTER_API_KEY, gen: (s, m) => openaiCompat("openrouter", "https://openrouter.ai/api/v1", process.env.OPENROUTER_API_KEY!, process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free", s, m, { "HTTP-Referer": "https://flowermon.app", "X-Title": "Flowermon" }) },
+  { name: "mistral", key: () => process.env.MISTRAL_API_KEY, gen: (s, m) => openaiCompat("mistral", "https://api.mistral.ai/v1", process.env.MISTRAL_API_KEY!, process.env.MISTRAL_MODEL || "mistral-small-latest", s, m) },
+  // Keyless free fallback — always attempted last so the bot works out of the box.
+  { name: "pollinations", key: () => (process.env.FLOWERMON_DISABLE_KEYLESS ? undefined : "keyless"), gen: tryPollinations },
 ];
 
 export interface CascadeResult { reply: string; changes: Delta; provider: string; }
+
+/** Names of providers that are currently configured (for diagnostics). */
+export function configuredProviders(): string[] {
+  return PROVIDERS.filter((p) => p.key()).map((p) => p.name);
+}
 
 /** Try each configured provider until one returns a parseable reply. */
 export async function generateCascade(

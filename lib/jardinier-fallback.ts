@@ -36,11 +36,11 @@ const CHANGE_COLOR = /(change|new|different|random|surprise|switch).{0,12}(colou
 // ── Moods ────────────────────────────────────────────────────────────────────
 
 const MOOD_WORDS: [RegExp, Humeur][] = [
-  [/happy|joyful|cheerful|glad|merry|excited/i, "joyeuse"],
-  [/sad|melancholy|gloomy|cry|blue mood|down|lonely/i, "melancolique"],
-  [/calm|serene|peaceful|quiet|still|zen|relax/i, "sereine"],
-  [/playful|mischievous|cheeky|silly|fun|naughty/i, "espiegle"],
-  [/dream|dreamy|soft|gentle|tender|sleepy/i, "reveuse"],
+  [/happy|joyful|cheerful|glad|merry|excited|smile|grin|beam|joy\b|sunshine/i, "joyeuse"],
+  [/sad|melancholy|gloomy|cry|weep|tear|frown|down|lonely|somber|mope|blue mood/i, "melancolique"],
+  [/calm|serene|peaceful|quiet|still|zen|relax|chill|tranquil|meditat/i, "sereine"],
+  [/playful|mischievous|cheeky|silly|fun|naughty|goofy|wink|tease|prank|tongue/i, "espiegle"],
+  [/dream|dreamy|soft|gentle|tender|sleepy|drowsy|cozy|whimsy/i, "reveuse"],
 ];
 
 // ── Accessories (word-bounded so "what" can't match "hat") ───────────────────
@@ -145,8 +145,8 @@ export function ruleBasedResponse(message: string): { reply: string; changes: De
   }
 
   // Petals
-  if (/more petals?|add petals?|fuller|bigger flower|bushier/i.test(message)) { changes.petales = "+2"; bump(R_PETALS_MORE, 2); }
-  else if (/less petals?|fewer petals?|remove petals?|simpler|smaller flower|minimal/i.test(message)) { changes.petales = "-2"; bump(R_PETALS_LESS, 2); }
+  if (/more petals?|add petals?|fuller|bigger|grow|expand|bushier|lush|huge/i.test(message)) { changes.petales = "+2"; bump(R_PETALS_MORE, 2); }
+  else if (/less petals?|fewer petals?|remove petals?|simpler|smaller|shrink|reduce|tiny|minimal/i.test(message)) { changes.petales = "-2"; bump(R_PETALS_LESS, 2); }
   else {
     const num = message.match(/\b([3-9]|1[0-2])\s*petals?\b/i);
     if (num) { changes.petales = parseInt(num[1], 10); bump(R_PETALS_MORE, 2); }
