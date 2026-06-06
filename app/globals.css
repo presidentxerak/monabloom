@@ -41,3 +41,14 @@ body {
     0 0 10px var(--bloom-a),
     0 0 28px var(--bloom-b);
 }
+
+.bg-void {
+  background: #050208;
+}
+
+.sound-btn {
+  transition: box-shadow 0.3s ease, transform 0.15s ease;
+}
+.sound-btn:hover {
+  transform: scale(1.12);
+}

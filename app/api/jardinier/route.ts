@@ -13,6 +13,7 @@ import {
   inscrireGenome,
   lireGrainePourGermination,
 } from "@/lib/monad";
+import { ruleBasedResponse } from "@/lib/jardinier-fallback";
 
 export const runtime = "nodejs";
 
@@ -104,13 +105,11 @@ export async function POST(req: Request) {
   // ── Chat branch. ──
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("[jardinier] ANTHROPIC_API_KEY missing — graceful fallback.");
-    return NextResponse.json({
-      reply:
-        "Mes racines ne touchent pas encore la source… (clé API absente). Mais la fleur t'écoute.",
-      changes: {},
-      genome,
-    });
+    // No API key: use rule-based responses so the flower still reacts.
+    const userMsg = lastUser?.content ?? "";
+    const { reply, changes } = ruleBasedResponse(userMsg);
+    const nextGenome = applyDelta(genome, changes);
+    return NextResponse.json({ reply, changes, genome: nextGenome });
   }
 
   try {

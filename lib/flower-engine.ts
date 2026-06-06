@@ -5,7 +5,7 @@
 import type { Genome } from "./genome";
 import { PETALES_MAX } from "./genome";
 import { HUMEUR_META } from "./humeur";
-import { prngFromHex } from "./prng";
+import { prngFromHex, seedFromHex } from "./prng";
 
 export type RGB = [number, number, number];
 
@@ -93,6 +93,99 @@ export function petalOutline(
   return pts;
 }
 
+/** Style 1 — Étoile: narrow, elongated, pointed petals. */
+function petalEtoile(length: number, width: number, segs = 20): Pt[] {
+  const pts: Pt[] = [];
+  const w = width * 0.38;
+  const l = length * 1.28;
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    pts.push({ x: cubic(0, -w * 0.35, -w * 0.35, 0, t), y: cubic(0, -l * 0.3, -l * 0.72, -l, t) });
+  }
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    pts.push({ x: cubic(0, w * 0.35, w * 0.35, 0, t), y: cubic(-l, -l * 0.72, -l * 0.3, 0, t) });
+  }
+  return pts;
+}
+
+/** Style 2 — Tulipe: wide base, cupped shape. */
+function petalTulipe(length: number, width: number, segs = 20): Pt[] {
+  const pts: Pt[] = [];
+  const w = width * 1.5;
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    pts.push({ x: cubic(0, -w * 1.25, -w * 0.55, 0, t), y: cubic(0, -length * 0.18, -length * 0.68, -length, t) });
+  }
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    pts.push({ x: cubic(0, w * 0.55, w * 1.25, 0, t), y: cubic(-length, -length * 0.68, -length * 0.18, 0, t) });
+  }
+  return pts;
+}
+
+/** Style 3 — Lancéolé: very long and narrow, like a blade. */
+function petalLanceole(length: number, width: number, segs = 20): Pt[] {
+  const pts: Pt[] = [];
+  const w = width * 0.22;
+  const l = length * 1.5;
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    pts.push({ x: cubic(0, -w, -w * 0.55, 0, t), y: cubic(0, -l * 0.38, -l * 0.78, -l, t) });
+  }
+  for (let i = 0; i < segs; i++) {
+    const t = i / segs;
+    pts.push({ x: cubic(0, w * 0.55, w, 0, t), y: cubic(-l, -l * 0.78, -l * 0.38, 0, t) });
+  }
+  return pts;
+}
+
+/** Style 4 — Ondulé: wavy ruffled edges. */
+function petalOndule(length: number, width: number, segs = 40): Pt[] {
+  const pts: Pt[] = [];
+  const waves = 3;
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const sine = Math.sin(t * Math.PI * waves) * 0.18;
+    pts.push({
+      x: -(width * (1 - t * 0.9) * (0.9 + sine)),
+      y: -length * t,
+    });
+  }
+  for (let i = segs; i >= 0; i--) {
+    const t = i / segs;
+    const sine = Math.sin(t * Math.PI * waves) * 0.18;
+    pts.push({
+      x: width * (1 - t * 0.9) * (0.9 + sine),
+      y: -length * t,
+    });
+  }
+  return pts;
+}
+
+/**
+ * Pick petal style 0-4 deterministically from the seed hash.
+ * 0=Classic  1=Étoile  2=Tulipe  3=Lancéolé  4=Ondulé
+ */
+export function petalStyle(seedHash: string): number {
+  return seedFromHex(seedHash + "style") % 5;
+}
+
+export function petalOutlineStyled(
+  length: number,
+  width: number,
+  style: number,
+  segs = 20,
+): Pt[] {
+  switch (style) {
+    case 1: return petalEtoile(length, width, segs);
+    case 2: return petalTulipe(length, width, segs);
+    case 3: return petalLanceole(length, width, segs);
+    case 4: return petalOndule(length, width, segs);
+    default: return petalOutline(length, width, segs);
+  }
+}
+
 /**
  * Deterministic per-petal organic variation (±8%) derived from the seed hash.
  * Index-stable: petal i always gets the same variation for a given seed, so
@@ -174,10 +267,11 @@ function drawPetal(
   a: RGB,
   b: RGB,
   phase: number,
+  style: number,
 ) {
   const length = baseRadius * variation.lengthFactor;
   const width = baseRadius * 0.46 * variation.widthFactor;
-  const pts = petalOutline(length, width);
+  const pts = petalOutlineStyled(length, width, style);
 
   p.push();
   p.rotate(angle);
@@ -231,6 +325,7 @@ export function drawFlower(
   const baseRadius = size * 0.32;
   const meta = HUMEUR_META[genome.humeur];
   const pulse = 1 + 0.03 * Math.sin(state.time * meta.pulse * 2);
+  const style = petalStyle(genome.seedHash);
 
   const nFull = Math.floor(state.petalesAffiches);
   const frac = state.petalesAffiches - nFull;
@@ -251,6 +346,7 @@ export function drawFlower(
       state.couleurA,
       state.couleurB,
       state.phase,
+      style,
     );
   }
   if (growing) {
@@ -264,6 +360,7 @@ export function drawFlower(
       state.couleurA,
       state.couleurB,
       state.phase,
+      style,
     );
   }
 

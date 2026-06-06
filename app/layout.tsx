@@ -10,9 +10,9 @@ const display = DotGothic16({
 });
 
 export const metadata: Metadata = {
-  title: "Monabloom — fais germer ta fleur",
+  title: "Flowermon — fais germer ta fleur",
   description:
-    "Une fleur générative kawaii qui germe par la parole, inscrite à jamais sur Monad.",
+    "Crée, collecte et échange des fleurs génératives uniques sur Monad testnet.",
 };
 
 export default function RootLayout({
