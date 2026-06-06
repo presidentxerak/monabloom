@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Bloom colours — updated live from the current genome so the whole UI
+     breathes with the flower. */
+  --bloom-a: #ff6ec7;
+  --bloom-b: #7a5cff;
+}
+
+html,
+body {
+  background: #050208;
+}
+
+/* Subtle film grain overlay across the whole page. */
+.grain {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Soft radial bloom glow tinted by the live genome colours. */
+.bloom-aura {
+  background: radial-gradient(
+    circle at 50% 45%,
+    var(--bloom-a) 0%,
+    transparent 55%
+  );
+  opacity: 0.1;
+}
+
+.neon-title {
+  color: var(--bloom-a);
+  text-shadow:
+    0 0 10px var(--bloom-a),
+    0 0 28px var(--bloom-b);
+}
