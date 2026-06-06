@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import FlowerPreview from "@/components/FlowerPreview";
 import SoundEngine from "@/components/SoundEngine";
-import { genomeAleatoire, DEMO_FLOWERS } from "@/lib/flower-random";
+import RarityBadge from "@/components/RarityBadge";
+import {
+  genomeAleatoire,
+  nomPoetique,
+  DEMO_FLOWERS,
+} from "@/lib/flower-random";
+import { computeRarity } from "@/lib/rarity";
 import type { Genome } from "@/lib/genome";
 import { getSoundEngine } from "@/lib/sound";
+import { connect, reconnect, payMon, getEthereum } from "@/lib/wallet";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,7 +28,9 @@ interface FlowerListing {
   owned?: boolean;
 }
 
-// ── Local storage helpers ────────────────────────────────────────────────────
+type SortKey = "recent" | "price-asc" | "price-desc" | "rarity";
+
+// ── Local storage ────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "flowermon_collection";
 
@@ -38,13 +47,24 @@ function saveCollection(items: FlowerListing[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-// ── MON price display ────────────────────────────────────────────────────────
+// ── Small bits ───────────────────────────────────────────────────────────────
 
 function PriceTag({ price }: { price: number }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-emerald-300">
       {price.toFixed(2)} MON
     </span>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-base font-medium text-zinc-100">{value}</span>
+      <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -58,27 +78,31 @@ function FlowerCard({
   wallet,
 }: {
   item: FlowerListing;
-  onBuy: (item: FlowerListing) => void;
-  onList: (item: FlowerListing) => void;
-  onUnlist: (item: FlowerListing) => void;
+  onBuy: (i: FlowerListing) => void;
+  onList: (i: FlowerListing) => void;
+  onUnlist: (i: FlowerListing) => void;
   wallet: string | null;
 }) {
+  const rarity = useMemo(() => computeRarity(item.genome), [item.genome]);
   const isOwn = item.owned;
 
   return (
     <div
       className="group flex flex-col overflow-hidden rounded-2xl border bg-black/50 backdrop-blur-sm transition hover:scale-[1.02]"
       style={{
-        borderColor: `${item.genome.couleurB}44`,
+        borderColor: `${rarity.color}55`,
         boxShadow: `0 0 18px ${item.genome.couleurA}22`,
       }}
     >
       <div
-        className="flex items-center justify-center p-4"
+        className="relative flex items-center justify-center p-4"
         style={{
           background: `radial-gradient(circle at 50% 50%, ${item.genome.couleurA}18 0%, transparent 70%)`,
         }}
       >
+        <div className="absolute left-2 top-2">
+          <RarityBadge rarity={rarity} small />
+        </div>
         <FlowerPreview genome={item.genome} size={130} />
       </div>
 
@@ -118,8 +142,7 @@ function FlowerCard({
         ) : (
           <button
             onClick={() => onBuy(item)}
-            disabled={!wallet}
-            className="mt-auto rounded-full py-1.5 text-xs font-medium text-black transition hover:opacity-90 disabled:opacity-40"
+            className="mt-auto rounded-full py-1.5 text-xs font-medium text-black transition hover:opacity-90"
             style={{ background: item.genome.couleurA }}
           >
             {wallet ? `Acheter ${item.price.toFixed(2)} MON` : "Connecter le wallet"}
@@ -130,7 +153,7 @@ function FlowerCard({
   );
 }
 
-// ── Price modal ──────────────────────────────────────────────────────────────
+// ── List modal ───────────────────────────────────────────────────────────────
 
 function PriceModal({
   item,
@@ -142,12 +165,13 @@ function PriceModal({
   onClose: () => void;
 }) {
   const [price, setPrice] = useState(item.price.toFixed(2));
+  const rarity = computeRarity(item.genome);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
       <div
         className="w-full max-w-sm rounded-2xl border bg-black/90 p-6"
-        style={{ borderColor: `${item.genome.couleurB}66` }}
+        style={{ borderColor: `${rarity.color}66` }}
       >
         <h2
           className="mb-1 text-lg font-medium"
@@ -159,6 +183,9 @@ function PriceModal({
         <div className="mb-5 flex items-center gap-3">
           <FlowerPreview genome={item.genome} size={80} />
           <div className="flex-1">
+            <div className="mb-2">
+              <RarityBadge rarity={rarity} />
+            </div>
             <label className="mb-1 block text-xs text-zinc-400">
               Prix en MON
             </label>
@@ -184,7 +211,7 @@ function PriceModal({
             className="flex-1 rounded-full py-2 text-sm font-medium text-black transition hover:opacity-90"
             style={{ background: item.genome.couleurA }}
           >
-            Mettre en vente
+            Confirmer
           </button>
         </div>
       </div>
@@ -196,44 +223,43 @@ function PriceModal({
 
 function BuyModal({
   item,
-  wallet,
   onConfirm,
   onClose,
   buying,
 }: {
   item: FlowerListing;
-  wallet: string | null;
   onConfirm: () => void;
   onClose: () => void;
   buying: boolean;
 }) {
+  const rarity = computeRarity(item.genome);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
       <div
         className="w-full max-w-sm rounded-2xl border bg-black/90 p-6"
-        style={{ borderColor: `${item.genome.couleurB}66` }}
+        style={{ borderColor: `${rarity.color}66` }}
       >
         <h2
           className="mb-1 text-lg font-medium"
           style={{ color: item.genome.couleurA }}
         >
-          Acquérir cette fleur
+          Cueillir cette fleur
         </h2>
         <p className="mb-4 text-xs text-zinc-500">{item.name}</p>
         <div className="mb-4 flex items-center gap-4">
           <FlowerPreview genome={item.genome} size={90} />
           <div className="text-sm text-zinc-300">
+            <div className="mb-2">
+              <RarityBadge rarity={rarity} />
+            </div>
             <p>
               Prix :{" "}
               <span className="font-medium text-emerald-300">
                 {item.price.toFixed(2)} MON
               </span>
             </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Vendeur : {item.seller.slice(0, 8)}…
-            </p>
             <p className="mt-2 text-xs text-zinc-400">
-              La fleur sera ajoutée à ta collection.
+              Le paiement part en MON sur Monad testnet.
             </p>
           </div>
         </div>
@@ -251,7 +277,7 @@ function BuyModal({
             className="flex-1 rounded-full py-2 text-sm font-medium text-black transition hover:opacity-90 disabled:opacity-50"
             style={{ background: item.genome.couleurA }}
           >
-            {buying ? "Transaction…" : `Acheter`}
+            {buying ? "Transaction…" : "Cueillir"}
           </button>
         </div>
       </div>
@@ -259,21 +285,31 @@ function BuyModal({
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
-export default function MarketplacePage() {
+export default function GardenPage() {
   const [collection, setCollection] = useState<FlowerListing[]>([]);
   const [wallet, setWallet] = useState<string | null>(null);
   const [tab, setTab] = useState<"market" | "collection">("market");
+  const [sort, setSort] = useState<SortKey>("recent");
   const [listModal, setListModal] = useState<FlowerListing | null>(null);
   const [buyModal, setBuyModal] = useState<FlowerListing | null>(null);
   const [buying, setBuying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [dummyGenome] = useState(() => genomeAleatoire());
 
-  // Load collection from localStorage
+  // Load collection + silently reconnect wallet + watch account changes.
   useEffect(() => {
     setCollection(loadCollection());
+    reconnect().then((acc) => acc && setWallet(acc));
+
+    const eth = getEthereum();
+    const onAccounts = (...args: unknown[]) => {
+      const accs = args[0] as string[];
+      setWallet(accs?.[0] ?? null);
+    };
+    eth?.on?.("accountsChanged", onAccounts);
+    return () => eth?.removeListener?.("accountsChanged", onAccounts);
   }, []);
 
   function showToast(msg: string) {
@@ -282,25 +318,26 @@ export default function MarketplacePage() {
   }
 
   async function connectWallet() {
-    const eth = (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum;
+    const eth = getEthereum();
     if (!eth) {
-      showToast("Installe MetaMask pour acheter des fleurs !");
+      showToast("Installe MetaMask pour cueillir des fleurs !");
       return;
     }
     try {
-      const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
-      if (accounts.length > 0) {
-        setWallet(accounts[0]);
-        showToast(`Wallet connecté : ${accounts[0].slice(0, 8)}…`);
+      const acc = await connect();
+      if (acc) {
+        setWallet(acc);
+        showToast(`Wallet connecté : ${acc.slice(0, 8)}…`);
       }
     } catch {
-      showToast("Connexion wallet annulée.");
+      showToast("Connexion annulée.");
     }
   }
 
   function createFlower() {
     const genome = genomeAleatoire();
-    const name = `Fleur #${collection.length + 1}`;
+    const name = nomPoetique(genome.seedHash);
+    const rarity = computeRarity(genome);
     const newFlower: FlowerListing = {
       id: `own-${Date.now()}`,
       name,
@@ -315,12 +352,8 @@ export default function MarketplacePage() {
     setCollection(updated);
     saveCollection(updated);
     getSoundEngine().playBloom();
-    showToast(`${name} créée !`);
+    showToast(`${name} a éclos — ${rarity.tier} !`);
     setTab("collection");
-  }
-
-  function handleList(item: FlowerListing) {
-    setListModal(item);
   }
 
   function confirmList(price: number) {
@@ -356,15 +389,7 @@ export default function MarketplacePage() {
     if (!buyModal || !wallet) return;
     setBuying(true);
     try {
-      const eth = (window as unknown as { ethereum?: { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> } }).ethereum;
-      if (eth) {
-        const valueHex = `0x${Math.floor(buyModal.price * 1e18).toString(16)}`;
-        await eth.request({
-          method: "eth_sendTransaction",
-          params: [{ from: wallet, to: buyModal.seller, value: valueHex }],
-        });
-      }
-      // Add to collection
+      await payMon(wallet, buyModal.seller, buyModal.price);
       const acquired: FlowerListing = {
         ...buyModal,
         id: `acquired-${Date.now()}`,
@@ -376,21 +401,45 @@ export default function MarketplacePage() {
       setCollection(updated);
       saveCollection(updated);
       getSoundEngine().playSell();
-      showToast(`${buyModal.name} ajoutée à ta collection !`);
+      showToast(`${buyModal.name} rejoint ta collection !`);
       setBuyModal(null);
     } catch {
-      showToast("Transaction annulée.");
+      showToast("Transaction annulée ou refusée.");
     } finally {
       setBuying(false);
     }
   }
 
-  // All listings for the market tab
-  const demoListed = DEMO_FLOWERS.filter((f) => f.listed);
-  const ownListed = collection.filter((f) => f.listed && f.owned);
-  const marketListings: FlowerListing[] = [...demoListed, ...ownListed];
+  // Build listings for the active tab.
+  const baseItems: FlowerListing[] = useMemo(() => {
+    if (tab === "market") {
+      const demoListed = DEMO_FLOWERS.filter((f) => f.listed);
+      const ownListed = collection.filter((f) => f.listed && f.owned);
+      return [...demoListed, ...ownListed];
+    }
+    return collection.filter((f) => f.owned);
+  }, [tab, collection]);
 
-  const tabItems = tab === "market" ? marketListings : collection.filter((f) => f.owned);
+  const items = useMemo(() => {
+    const arr = [...baseItems];
+    switch (sort) {
+      case "price-asc":
+        return arr.sort((a, b) => a.price - b.price);
+      case "price-desc":
+        return arr.sort((a, b) => b.price - a.price);
+      case "rarity":
+        return arr.sort(
+          (a, b) =>
+            computeRarity(b.genome).score - computeRarity(a.genome).score,
+        );
+      default:
+        return arr.reverse();
+    }
+  }, [baseItems, sort]);
+
+  const floor =
+    baseItems.length > 0 ? Math.min(...baseItems.map((i) => i.price)) : 0;
+  const ownedCount = collection.filter((f) => f.owned).length;
 
   return (
     <div className="min-h-screen bg-void text-zinc-100">
@@ -401,7 +450,7 @@ export default function MarketplacePage() {
             FLOWERMON
           </Link>
           <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-zinc-400">
-            Marketplace
+            🌿 The Garden
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -422,38 +471,57 @@ export default function MarketplacePage() {
             className="rounded-full px-3 py-1.5 text-xs font-medium text-black transition hover:opacity-90"
             style={{ background: "#ff6ec7" }}
           >
-            + Créer une fleur
+            + Faire éclore
           </button>
         </div>
       </nav>
 
-      {/* Tabs */}
       <div className="mx-auto max-w-6xl px-4 pt-6">
-        <div className="mb-6 flex gap-1 rounded-full bg-white/5 p-1 w-fit">
-          {(["market", "collection"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-full px-5 py-1.5 text-sm transition ${tab === t ? "bg-white/15 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+        {/* Tabs + stats + sort */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex gap-1 rounded-full bg-white/5 p-1">
+            {(["market", "collection"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`rounded-full px-5 py-1.5 text-sm transition ${tab === t ? "bg-white/15 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+              >
+                {t === "market" ? "Marché" : "Ma collection"}
+                {t === "collection" && ownedCount > 0 && (
+                  <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
+                    {ownedCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-5">
+            <Stat label="Fleurs" value={String(items.length)} />
+            {tab === "market" && (
+              <Stat label="Prix plancher" value={`${floor.toFixed(2)} MON`} />
+            )}
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="rounded-full bg-white/5 px-3 py-1.5 text-xs text-zinc-300 outline-none hover:bg-white/10"
             >
-              {t === "market" ? "Marché" : "Ma collection"}
-              {t === "collection" && collection.filter((f) => f.owned).length > 0 && (
-                <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
-                  {collection.filter((f) => f.owned).length}
-                </span>
-              )}
-            </button>
-          ))}
+              <option value="recent">Récent</option>
+              <option value="price-asc">Prix ↑</option>
+              <option value="price-desc">Prix ↓</option>
+              <option value="rarity">Rareté</option>
+            </select>
+          </div>
         </div>
 
         {/* Grid */}
-        {tabItems.length === 0 ? (
+        {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 text-5xl opacity-30">🌸</div>
             <p className="text-zinc-500">
               {tab === "market"
-                ? "Le marché est vide pour l'instant."
-                : "Ta collection est vide. Crée ta première fleur !"}
+                ? "Le jardin est encore en sommeil."
+                : "Ta collection est vide. Fais éclore ta première fleur !"}
             </p>
             {tab === "collection" && (
               <button
@@ -461,18 +529,18 @@ export default function MarketplacePage() {
                 className="mt-4 rounded-full px-5 py-2 text-sm font-medium text-black"
                 style={{ background: "#ff6ec7" }}
               >
-                Créer une fleur
+                Faire éclore une fleur
               </button>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {tabItems.map((item) => (
+            {items.map((item) => (
               <FlowerCard
                 key={item.id}
                 item={item}
                 onBuy={handleBuy}
-                onList={handleList}
+                onList={(i) => setListModal(i)}
                 onUnlist={handleUnlist}
                 wallet={wallet}
               />
@@ -492,7 +560,6 @@ export default function MarketplacePage() {
       {buyModal && (
         <BuyModal
           item={buyModal}
-          wallet={wallet}
           onConfirm={confirmBuy}
           onClose={() => setBuyModal(null)}
           buying={buying}
@@ -501,12 +568,11 @@ export default function MarketplacePage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-full bg-black/90 px-5 py-2.5 text-sm text-zinc-200 shadow-lg border border-white/10">
+        <div className="fixed bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/10 bg-black/90 px-5 py-2.5 text-sm text-zinc-200 shadow-lg">
           {toast}
         </div>
       )}
 
-      {/* Sound engine — uses a dummy genome for effects when on marketplace */}
       <SoundEngine genome={dummyGenome} />
     </div>
   );

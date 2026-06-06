@@ -50,6 +50,27 @@ export function genomeAleatoire(): Genome {
   return genomeFromSeed(seed);
 }
 
+// ── Poetic French name generator ─────────────────────────────────────────────
+
+const NOM_ADJ = [
+  "Soyeuse", "Ardente", "Lunaire", "Cristalline", "Sauvage", "Céleste",
+  "Veloutée", "Boréale", "Éthérée", "Flamboyante", "Givrée", "Solaire",
+  "Nocturne", "Onirique", "Tendre", "Électrique", "Brumeuse", "Mystique",
+];
+const NOM_FLEUR = [
+  "Corolle", "Pivoine", "Aurore", "Comète", "Nébuleuse", "Étincelle",
+  "Lueur", "Murmure", "Éclat", "Rosée", "Braise", "Vague",
+  "Aube", "Songe", "Flamme", "Marée", "Halo", "Prisme",
+];
+
+/** Deterministic poetic name from a seed hash (stable per flower). */
+export function nomPoetique(seedHash: string): string {
+  const n = seedFromHex(seedHash);
+  const adj = NOM_ADJ[n % NOM_ADJ.length];
+  const fleur = NOM_FLEUR[Math.floor(n / 7) % NOM_FLEUR.length];
+  return `${fleur} ${adj}`;
+}
+
 /** Pre-generated demo seeds for the marketplace. */
 const DEMO_SEEDS = [
   "soleil-ardent-du-matin",

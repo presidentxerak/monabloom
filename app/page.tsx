@@ -29,10 +29,10 @@ export default function Home() {
             FLOWERMON
           </h1>
           <Link
-            href="/marketplace"
+            href="/garden"
             className="rounded-full border border-white/20 px-3 py-0.5 text-xs text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
           >
-            Marketplace
+            🌿 The Garden
           </Link>
         </div>
 
