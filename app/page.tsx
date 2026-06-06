@@ -45,7 +45,7 @@ export default function Landing() {
         <div className="flex items-center gap-2 text-xs">
           <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
           <Link href="/blitz" className="pill rounded-full px-3 py-1.5">Blitz Garden</Link>
-          <Link href="/play" className="rounded-full bg-zinc-900 px-3 py-1.5 font-medium text-white">Play</Link>
+          <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">Play</Link>
         </div>
       </nav>
 
@@ -61,7 +61,7 @@ export default function Landing() {
           generated from an on chain seed, with its own name, rank and rarity.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3 text-sm">
-          <Link href="/play" className="rounded-full bg-zinc-900 px-5 py-2.5 font-medium text-white transition hover:opacity-90">Grow a Flower</Link>
+          <Link href="/play" className="btn-bump rounded-full px-5 py-2.5 font-medium">Grow a Flower</Link>
           <Link href="/cards" className="pill rounded-full px-5 py-2.5">Browse Cards</Link>
           <Link href="/blitz" className="pill rounded-full px-5 py-2.5">Enter Blitz Garden</Link>
         </div>
@@ -140,7 +140,7 @@ export default function Landing() {
           Garden.
         </p>
         <div className="mt-7 flex flex-wrap justify-center gap-3 text-sm">
-          <Link href="/play" className="rounded-full bg-zinc-900 px-5 py-2.5 font-medium text-white transition hover:opacity-90">Start growing</Link>
+          <Link href="/play" className="btn-bump rounded-full px-5 py-2.5 font-medium">Start growing</Link>
           <Link href="/blitz" className="pill rounded-full px-5 py-2.5">Enter Blitz Garden</Link>
         </div>
       </section>

@@ -49,6 +49,26 @@ body {
   backdrop-filter: blur(10px);
 }
 
+/* Attractive primary button: animated gradient + a looping bump pulse. */
+@keyframes btnGrad { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+@keyframes btnBump { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.btn-bump {
+  background-image: linear-gradient(90deg, var(--bloom-a), var(--bloom-b), var(--bloom-a));
+  background-size: 200% 100%;
+  color: #fff;
+  border: none;
+  animation: btnGrad 5s linear infinite, btnBump 2.4s ease-in-out infinite;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--bloom-a) 35%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-bump:hover {
+  animation-duration: 2.6s, 0.9s;
+  filter: brightness(1.06);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--bloom-a) 50%, transparent);
+}
+.btn-bump:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .btn-bump { animation: none; } }
+
 /* Slowly rotating petals for the SVG flower previews. */
 @keyframes fmspin {
   to {

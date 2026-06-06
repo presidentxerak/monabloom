@@ -68,7 +68,7 @@ export default function BlitzGardenPage() {
         </div>
         <div className="flex items-center gap-2 text-xs">
           <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
-          <Link href="/play" className="rounded-full bg-zinc-900 px-3 py-1.5 font-medium text-white">Grow a Flower</Link>
+          <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">Grow a Flower</Link>
         </div>
       </nav>
 
@@ -108,8 +108,7 @@ export default function BlitzGardenPage() {
                     </Link>
                     <button
                       onClick={() => collect(selected)}
-                      className="rounded-full px-3 py-1.5 text-[11px] font-medium text-white transition hover:opacity-90"
-                      style={{ background: selected.genome.couleurA }}
+                      className="btn-bump rounded-full px-3 py-1.5 text-[11px] font-medium"
                     >
                       Collect
                     </button>

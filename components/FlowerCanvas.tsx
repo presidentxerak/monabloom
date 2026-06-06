@@ -47,9 +47,10 @@ interface PetalVar { len: number; wid: number; hueShift: number; tilt: number; }
 interface Projectile { action: FeedSignal["action"]; t: number; }
 interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; col: RGB; tw: number; sz: number; }
 
+// Power sparkles are white and yellow stars.
 const SPARKLE_COLORS: RGB[] = [
-  [255, 255, 255], [255, 233, 168], [255, 179, 230], [217, 179, 255],
-  [179, 240, 255], [201, 255, 217], [255, 210, 120],
+  [255, 255, 255], [255, 246, 200], [255, 232, 120], [255, 255, 255],
+  [255, 250, 170], [255, 240, 150], [255, 255, 235],
 ];
 
 function computeRig(dance: number, t: number) {
@@ -93,7 +94,7 @@ export default function FlowerCanvas({
       let dispB: RGB = hexToRgb(genomeRef.current.couleurB);
       let dispBg: RGB = tint(hexToRgb(genomeRef.current.couleurB), 0.82);
       let petalesShown = genomeRef.current.petales;
-      let petalSpin = 0, gulp = 0, danceT = 0;
+      let petalSpin = 0, gulp = 0, danceT = 0, powerFx = 0;
       let lastFeedId = feedRef.current?.id ?? -1;
       let lastPowerId = powerRef.current?.id ?? -1;
       const projectiles: Projectile[] = [];
@@ -299,6 +300,7 @@ export default function FlowerCanvas({
           const pw = powerRef.current;
           if (pw && pw.id !== lastPowerId) {
             lastPowerId = pw.id;
+            powerFx = 1.5;
             for (let i = 0; i < 70; i++) {
               const a = Math.random() * Math.PI * 2;
               const sp = 0.6 + Math.random() * 2.4;
@@ -428,6 +430,50 @@ export default function FlowerCanvas({
             p.push(); p.box(s * 0.5, s * 2.6, s * 0.5); p.pop();
             p.push(); p.sphere(s * 0.8, 6, 6); p.pop(); // bright centre
             p.pop();
+          }
+
+          // ── Power magic: a glowing pentacle on the ground + a rainbow burst. ──
+          if (powerFx > 0) {
+            const fade = Math.min(1, powerFx); // 1 -> 0
+            const grow = 1 + (1.5 - powerFx) * 0.7;
+            const fxMat = (c: RGB, al: number, spec = 200, shine = 40) => { p.fill(c[0], c[1], c[2], al); p.ambientMaterial(c[0], c[1], c[2]); p.specularMaterial(spec); p.shininess(shine); };
+            const gold: RGB = [255, 224, 120], white: RGB = [255, 255, 255];
+
+            // Pentacle on the ground beneath the flower.
+            p.push();
+            p.translate(0, R * 4.2, 0);
+            p.rotateX(Math.PI / 2);
+            p.rotateZ(danceT * 1.2);
+            const Rp = R * 2.6 * grow, al = fade * 230;
+            fxMat(gold, al); p.push(); p.torus(Rp, R * 0.05, 40, 8); p.pop();
+            fxMat(white, al * 0.8); p.push(); p.torus(Rp * 0.78, R * 0.035, 36, 8); p.pop();
+            // 5-point star (pentagram) made of thin bars.
+            const vx: [number, number][] = [];
+            for (let k = 0; k < 5; k++) { const ang = -Math.PI / 2 + (k / 5) * Math.PI * 2; vx.push([Math.cos(ang) * Rp * 0.78, Math.sin(ang) * Rp * 0.78]); }
+            fxMat(gold, al);
+            for (let k = 0; k < 5; k++) {
+              const a1 = vx[k], a2 = vx[(k + 2) % 5];
+              const mx = (a1[0] + a2[0]) / 2, my = (a1[1] + a2[1]) / 2;
+              const len = Math.hypot(a2[0] - a1[0], a2[1] - a1[1]);
+              const ang = Math.atan2(a2[1] - a1[1], a2[0] - a1[0]);
+              p.push(); p.translate(mx, my, 0); p.rotateZ(ang); p.box(len, R * 0.06, R * 0.06); p.pop();
+            }
+            // star points
+            for (const [sx, sy] of vx) { p.push(); p.translate(sx, sy, 0); p.box(R * 0.4, R * 0.1, R * 0.1); p.box(R * 0.1, R * 0.4, R * 0.1); p.pop(); }
+            p.pop();
+
+            // Rainbow burst above the head.
+            const rcols: RGB[] = [[255, 96, 96], [255, 170, 70], [255, 235, 96], [110, 210, 120], [100, 170, 255], [150, 110, 240]];
+            p.push();
+            p.translate(0, -R * 1.4, 0);
+            p.rotateZ(danceT * 0.6);
+            for (let k = 0; k < rcols.length; k++) {
+              fxMat(rcols[k], fade * 180, 80, 20);
+              p.push(); p.torus((R * 1.4 + k * R * 0.42) * grow, R * 0.06, 24, 6); p.pop();
+            }
+            p.pop();
+
+            powerFx -= 0.012;
           }
 
           p.pop();

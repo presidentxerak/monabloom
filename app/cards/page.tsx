@@ -622,8 +622,7 @@ export default function GardenPage() {
           )}
           <button
             onClick={createFlower}
-            className="rounded-full px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
-            style={{ background: "#ff6ec7" }}
+            className="btn-bump rounded-full px-3 py-1.5 text-xs font-medium"
           >
             + New flower
           </button>
@@ -689,8 +688,7 @@ export default function GardenPage() {
             {tab === "collection" && (
               <button
                 onClick={createFlower}
-                className="mt-4 rounded-full px-5 py-2 text-sm font-medium text-white"
-                style={{ background: "#ff6ec7" }}
+                className="btn-bump mt-4 rounded-full px-5 py-2 text-sm font-medium"
               >
                 Grow a flower
               </button>

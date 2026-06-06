@@ -37,10 +37,10 @@ export default function BlitzGarden({
       if (!mounted || !container) return;
 
       let t = 0;
-      const R = 46;
-      const EL = 0.92;            // fixed 3/4 elevation (camera never goes under the map)
+      const R = 72;
+      const EL = 0.9;            // fixed 3/4 elevation (camera never goes under the map)
       let az = 0.7;              // azimuth (drag to rotate)
-      let dist = 2600;          // zoom
+      let dist = 2100;          // zoom
       let downX = 0, downY = 0, moved = false;
       let pickReq: { x: number; y: number } | null = null;
       let eye = { x: 0, y: -1, z: 1 };
@@ -59,7 +59,7 @@ export default function BlitzGarden({
       const flowerPos = (id: string) => {
         const s = seedFromHex(id);
         const r1 = (s % 100000) / 100000, r2 = ((s >>> 7) % 100000) / 100000;
-        const a = r1 * Math.PI * 2, rad = (0.12 + Math.sqrt(r2) * 0.82) * MAP_R;
+        const a = r1 * Math.PI * 2, rad = (0.08 + Math.sqrt(r2) * 0.72) * 2600;
         return { x: Math.cos(a) * rad, z: Math.sin(a) * rad };
       };
 
@@ -93,8 +93,8 @@ export default function BlitzGarden({
           ponds.forEach(pond); bushes.forEach(bush); trees.forEach(tree); firs.forEach(fir); barns.forEach(barn); pens.forEach(pen);
         };
 
-        const idColor = (i: number): [number, number, number] => [Math.min(255, i * 4 + 4), (i >> 6) * 60, 0];
-        const decodeId = (c: number[]): number => Math.round(((c?.[0] ?? 0) - 4) / 4) + ((c?.[1] ?? 0) / 60 | 0) * 64;
+        const idColor = (i: number): [number, number, number] => [i * 3 + 5, 0, 0];
+        const decodeId = (c: number[]): number => { const r = c?.[0] ?? 0; return r < 5 ? 0 : Math.round((r - 5) / 3); };
 
         const renderFlowers = (pick: boolean) => {
           const list = flowersRef.current;
@@ -102,7 +102,7 @@ export default function BlitzGarden({
             const pos = flowerPos(list[i].id);
             const dx = pos.x - eye.x, dy = -CHAR_FOOT * R - eye.y, dz = pos.z - eye.z;
             const dToEye = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            const lod = dToEye > 2400 ? 1 : 0;
+            const lod = dToEye > 3200 ? 1 : 0;
             p.push();
             p.translate(pos.x, -CHAR_FOOT * R, pos.z);
             if (pick) {
@@ -120,9 +120,9 @@ export default function BlitzGarden({
         const applyCamera = () => {
           const w = p.width, h = p.height;
           const hr = Math.cos(EL) * dist, hh = Math.sin(EL) * dist;
-          const cx = 0, cy = -200, cz = 0;
+          const cx = 0, cy = -240, cz = 0;
           eye = { x: cx + Math.sin(az) * hr, y: cy - hh, z: cz + Math.cos(az) * hr };
-          p.perspective(Math.PI / 3.1, w / h, 20, 16000);
+          p.perspective(Math.PI / 3.1, w / h, 20, 18000);
           p.camera(eye.x, eye.y, eye.z, cx, cy, cz, 0, -1, 0);
         };
 
@@ -158,7 +158,7 @@ export default function BlitzGarden({
           az -= (p.mouseX - p.pmouseX) * 0.006;
         };
         p.mouseReleased = () => { if (!moved && inCanvas(downX, downY)) pickReq = { x: downX, y: downY }; };
-        p.mouseWheel = (e: { delta: number }) => { dist = Math.max(900, Math.min(6500, dist + e.delta * 2)); return false; };
+        p.mouseWheel = (e: { delta: number }) => { dist = Math.max(900, Math.min(7000, dist + e.delta * 2)); return false; };
       };
 
       instance = new P5(sketch, container);
