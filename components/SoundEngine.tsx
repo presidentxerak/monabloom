@@ -34,8 +34,12 @@ export default function SoundEngine({ genome }: { genome: Genome }) {
       onClick={toggle}
       title={on ? "Couper la musique" : "Activer la musique"}
       aria-label={on ? "Couper la musique" : "Activer la musique"}
-      className="sound-btn fixed bottom-4 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/60 text-lg backdrop-blur-sm transition hover:scale-110 hover:bg-black/80"
-      style={{ boxShadow: on ? `0 0 14px ${genome.couleurA}88` : undefined }}
+      className="sound-btn flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-zinc-300 backdrop-blur-sm transition hover:bg-white/10"
+      style={{
+        color: on ? genome.couleurA : undefined,
+        borderColor: on ? `${genome.couleurA}55` : undefined,
+        boxShadow: on ? `0 0 12px ${genome.couleurA}55` : undefined,
+      }}
     >
       {on ? "♫" : "♪"}
     </button>

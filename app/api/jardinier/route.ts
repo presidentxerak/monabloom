@@ -17,15 +17,23 @@ import { ruleBasedResponse } from "@/lib/jardinier-fallback";
 
 export const runtime = "nodejs";
 
-const MODEL = "claude-sonnet-4-5";
+const MODEL = "claude-sonnet-4-6";
 const MAX_HISTORY = 12;
 const ADDRESS_RE = /0x[a-fA-F0-9]{40}/;
 const PLACEHOLDER_HASH = "0x" + "0".repeat(64);
 
-const REPLI_DOUX =
-  "Le vent a emporté mes mots… mais ta fleur tient bon. Redis-moi ton envie ?";
-
 type ChatMessage = { role: "user" | "assistant"; content: string };
+
+/**
+ * Universal fallback: whenever the LLM is unavailable or returns something
+ * unusable, fall back to the rule-based gardener so the flower ALWAYS reacts.
+ * The flower must never feel "dead".
+ */
+function fallbackResponse(genome: Genome, userMsg: string) {
+  const { reply, changes } = ruleBasedResponse(userMsg);
+  const nextGenome = applyDelta(genome, changes);
+  return NextResponse.json({ reply, changes, genome: nextGenome });
+}
 
 /** Ensure the genome carries a real on-chain seed before it matters. */
 async function ensureSeed(genome: Genome): Promise<Genome> {
@@ -50,7 +58,11 @@ export async function POST(req: Request) {
     body = await req.json();
   } catch {
     return NextResponse.json(
-      { reply: REPLI_DOUX, changes: {}, genome: genomeDefaut() },
+      {
+        reply: "Redis-moi ton envie ? Le jardin t'écoute.",
+        changes: {},
+        genome: genomeDefaut(),
+      },
       { status: 200 },
     );
   }
@@ -68,6 +80,7 @@ export async function POST(req: Request) {
 
   const history = Array.isArray(messages) ? messages.slice(-MAX_HISTORY) : [];
   const lastUser = [...history].reverse().find((m) => m.role === "user");
+  const userMsg = lastUser?.content ?? "";
 
   // ── Inscription branch: a valid address in the latest user message wins. ──
   const addressMatch = lastUser?.content.match(ADDRESS_RE);
@@ -103,14 +116,9 @@ export async function POST(req: Request) {
   }
 
   // ── Chat branch. ──
+  // No API key: the rule-based gardener handles everything.
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    // No API key: use rule-based responses so the flower still reacts.
-    const userMsg = lastUser?.content ?? "";
-    const { reply, changes } = ruleBasedResponse(userMsg);
-    const nextGenome = applyDelta(genome, changes);
-    return NextResponse.json({ reply, changes, genome: nextGenome });
-  }
+  if (!apiKey) return fallbackResponse(genome, userMsg);
 
   try {
     const anthropic = new Anthropic({ apiKey });
@@ -132,9 +140,9 @@ export async function POST(req: Request) {
 
     const parsed = parseJardinierReply(text);
     if (!parsed) {
-      // Validation failed: show the doux fallback, genome does NOT move.
+      // LLM output unusable → rule-based fallback so the flower STILL changes.
       console.warn("[jardinier] unparseable LLM output:", text.slice(0, 200));
-      return NextResponse.json({ reply: REPLI_DOUX, changes: {}, genome });
+      return fallbackResponse(genome, userMsg);
     }
 
     // Apply the delta server-side — the server stays the authority.
@@ -145,7 +153,8 @@ export async function POST(req: Request) {
       genome: nextGenome,
     });
   } catch (err) {
-    console.error("[jardinier] LLM call failed:", err);
-    return NextResponse.json({ reply: REPLI_DOUX, changes: {}, genome });
+    // LLM call failed (bad key, network, model) → rule-based fallback.
+    console.error("[jardinier] LLM call failed, using fallback:", err);
+    return fallbackResponse(genome, userMsg);
   }
 }

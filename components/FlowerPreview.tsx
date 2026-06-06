@@ -14,6 +14,7 @@ export default function FlowerPreview({ genome, size = 140 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
   const R = size * 0.31;
+  const coreR = size * 0.07; // petals start at the core rim
   const style = petalStyle(seedHash);
   const gradId = `fg-${seedHash.slice(2, 14)}`;
 
@@ -21,6 +22,10 @@ export default function FlowerPreview({ genome, size = 140 }: Props) {
     const angle = (i / petales) * Math.PI * 2 - Math.PI / 2;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
+
+    // Base sits on the core rim, not the dead centre.
+    const bx = cx + cos * coreR;
+    const by = cy + sin * coreR;
 
     // Tip of the petal
     const tx = cx + cos * R;
@@ -62,8 +67,8 @@ export default function FlowerPreview({ genome, size = 140 }: Props) {
         cp2y = cy + sin * R * 0.7 + perp.y * R * 0.42;
     }
 
-    // Mirror control points for the return path
-    const d = `M ${cx} ${cy} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${tx} ${ty} C ${2 * tx - cp2x} ${2 * ty - cp2y} ${2 * tx - cp1x} ${2 * ty - cp1y} ${cx} ${cy}`;
+    // Mirror control points for the return path; start/end on the core rim.
+    const d = `M ${bx} ${by} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${tx} ${ty} C ${2 * tx - cp2x} ${2 * ty - cp2y} ${2 * tx - cp1x} ${2 * ty - cp1y} ${bx} ${by}`;
     const color = i % 2 === 0 ? couleurA : couleurB;
 
     return (

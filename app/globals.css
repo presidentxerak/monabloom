@@ -47,8 +47,25 @@ body {
 }
 
 .sound-btn {
-  transition: box-shadow 0.3s ease, transform 0.15s ease;
+  transition: box-shadow 0.3s ease, transform 0.15s ease, color 0.3s ease;
 }
 .sound-btn:hover {
-  transform: scale(1.12);
+  transform: scale(1.08);
+}
+
+/* Garden link — subtle outline that lights up on hover. */
+.garden-link {
+  border-color: color-mix(in srgb, var(--bloom-b) 35%, transparent);
+  color: color-mix(in srgb, var(--bloom-a) 80%, white 20%);
+  background: color-mix(in srgb, var(--bloom-b) 8%, transparent);
+}
+.garden-link:hover {
+  border-color: var(--bloom-a);
+  background: color-mix(in srgb, var(--bloom-a) 14%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--bloom-a) 40%, transparent);
+}
+
+/* Softer, slower grain for a calmer, more minimal stage. */
+.bloom-aura {
+  transition: background 0.8s ease;
 }

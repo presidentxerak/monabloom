@@ -93,4 +93,38 @@ export async function payMon(
   return hash;
 }
 
+export function explorerTx(hash: string): string {
+  return `${EXPLORER_URL.replace(/\/$/, "")}/tx/${hash}`;
+}
+
+/**
+ * Inscribe a flower genome ON-CHAIN, player-funded: a self-transaction on Monad
+ * testnet whose calldata carries the genome JSON. No server wallet needed — the
+ * player signs it with their own wallet, so it's truly their flower, forever.
+ * Returns the tx hash + explorer link.
+ */
+export async function inscribeOnChain(
+  from: string,
+  genome: unknown,
+): Promise<{ txHash: string; explorerUrl: string }> {
+  const eth = getEthereum();
+  if (!eth) throw new Error("no wallet");
+  await ensureMonadChain(eth);
+
+  const json = JSON.stringify(genome);
+  const bytes = new TextEncoder().encode(json);
+  const data =
+    "0x" +
+    Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+  const txHash = (await eth.request({
+    method: "eth_sendTransaction",
+    params: [{ from, to: from, value: "0x0", data }],
+  })) as string;
+
+  return { txHash, explorerUrl: explorerTx(txHash) };
+}
+
 export { EXPLORER_URL };
