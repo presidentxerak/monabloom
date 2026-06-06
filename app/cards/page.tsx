@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import FlowerPreview from "@/components/FlowerPreview";
 import SoundEngine from "@/components/SoundEngine";
 import RarityBadge from "@/components/RarityBadge";
+import WalletButton from "@/components/WalletButton";
 import { genomeAleatoire, nomPoetique } from "@/lib/flower-random";
 import { PLAYER_FLOWERS } from "@/lib/fake-players";
 import {
@@ -18,13 +19,7 @@ import { tokenLabel, rank } from "@/lib/identity";
 import { croiser } from "@/lib/actions";
 import type { Genome } from "@/lib/genome";
 import { getSoundEngine } from "@/lib/sound";
-import {
-  connect,
-  reconnect,
-  payMon,
-  inscribeOnChain,
-  getEthereum,
-} from "@/lib/wallet";
+import { connect, payMon, inscribeOnChain } from "@/lib/wallet";
 
 type Tab = "market" | "collection" | "breed";
 type SortKey = "recent" | "price-asc" | "price-desc" | "rarity";
@@ -403,15 +398,7 @@ export default function GardenPage() {
 
   useEffect(() => {
     setCollection(loadCollection());
-    reconnect().then((acc) => acc && setWallet(acc));
-
-    const eth = getEthereum();
-    const onAccounts = (...args: unknown[]) => {
-      const accs = args[0] as string[];
-      setWallet(accs?.[0] ?? null);
-    };
-    eth?.on?.("accountsChanged", onAccounts);
-    return () => eth?.removeListener?.("accountsChanged", onAccounts);
+    // Wallet connection + account changes are owned by <WalletButton onChange>.
   }, []);
 
   function showToast(msg: string) {
@@ -420,16 +407,13 @@ export default function GardenPage() {
   }
 
   async function connectWallet() {
-    const eth = getEthereum();
-    if (!eth) {
-      showToast("Install MetaMask to pick flowers!");
-      return;
-    }
     try {
       const acc = await connect();
       if (acc) {
         setWallet(acc);
         showToast(`Wallet connected: ${acc.slice(0, 8)}…`);
+      } else {
+        showToast("Install MetaMask to pick flowers!");
       }
     } catch {
       showToast("Connection cancelled.");
@@ -605,22 +589,14 @@ export default function GardenPage() {
         </div>
         <div className="flex items-center gap-1.5">
           <SoundEngine genome={dummyGenome} />
-          {wallet ? (
-            <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] text-emerald-700">
-              {wallet.slice(0, 5)}…{wallet.slice(-3)}
-            </span>
-          ) : (
-            <button onClick={connectWallet} className="pill rounded-full px-3 py-1.5 text-xs">
-              Collect
-            </button>
-          )}
+          <WalletButton onChange={setWallet} />
           <button onClick={createFlower} className="btn-bump rounded-full px-3 py-1.5 text-xs font-medium">
             + New
           </button>
         </div>
       </nav>
 
-      <div className="mx-auto max-w-6xl px-4 pt-6">
+      <div className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:pb-10">
         {/* Tabs + stats + sort */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex gap-1 rounded-full bg-white/60 p-1">
@@ -722,7 +698,7 @@ export default function GardenPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-900/90 px-5 py-2.5 text-sm text-white shadow-lg">
+        <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-900/90 px-5 py-2.5 text-sm text-white shadow-lg sm:bottom-6">
           {toast}
         </div>
       )}

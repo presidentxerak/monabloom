@@ -9,6 +9,7 @@ import SoundEngine from "@/components/SoundEngine";
 import FeedBar, { type WardrobeTab } from "@/components/FeedBar";
 import Wardrobe from "@/components/Wardrobe";
 import MusicPlayer from "@/components/MusicPlayer";
+import WalletButton from "@/components/WalletButton";
 import { GenomeSchema, genomeDefaut, type Genome } from "@/lib/genome";
 import { feedFlower, FEED_ACTIONS, type FeedAction } from "@/lib/actions";
 import { addOwnedGenome } from "@/lib/collection";
@@ -108,7 +109,7 @@ export default function Play() {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col gap-3 p-3 lg:h-screen lg:flex-row lg:overflow-hidden lg:gap-4 lg:p-4">
+    <main className="relative flex min-h-screen flex-col gap-3 p-3 pb-[80px] sm:pb-3 lg:h-screen lg:flex-row lg:overflow-hidden lg:gap-4 lg:p-4">
       <section className="relative flex min-h-[58vh] flex-1 flex-col overflow-hidden rounded-3xl lg:min-h-0">
         {/* 3D flower behind everything */}
         <div className="absolute inset-0">
@@ -121,10 +122,13 @@ export default function Play() {
             <Link href="/" className="brand-title font-display text-base sm:text-lg">
               FLOWER<span className="brand-dot">MON</span>
             </Link>
-            <Link href="/cards" className="pill rounded-full px-2.5 py-0.5 text-[10px] font-medium sm:text-xs">Cards</Link>
-            <Link href="/blitz" className="pill rounded-full px-2.5 py-0.5 text-[10px] font-medium sm:text-xs">Blitz</Link>
+            <Link href="/cards" className="pill hidden rounded-full px-2.5 py-0.5 text-[10px] font-medium sm:inline-block sm:text-xs">Cards</Link>
+            <Link href="/blitz" className="pill hidden rounded-full px-2.5 py-0.5 text-[10px] font-medium sm:inline-block sm:text-xs">Blitz</Link>
           </div>
-          <SoundEngine genome={genome} />
+          <div className="flex items-center gap-1.5">
+            <WalletButton />
+            <SoundEngine genome={genome} />
+          </div>
         </div>
 
         {/* Identity card + health gauge */}

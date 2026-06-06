@@ -105,6 +105,63 @@ export function explorerTx(hash: string): string {
   return `${EXPLORER_URL.replace(/\/$/, "")}/tx/${hash}`;
 }
 
+export function explorerAddress(addr: string): string {
+  return `${EXPLORER_URL.replace(/\/$/, "")}/address/${addr}`;
+}
+
+export const MONAD_CHAIN_ID = CHAIN_ID;
+
+/** Read the native MON balance (in MON) of an address. */
+export async function getBalanceMon(address: string): Promise<number | null> {
+  const eth = getEthereum();
+  if (!eth) return null;
+  try {
+    const hex = (await eth.request({
+      method: "eth_getBalance",
+      params: [address, "latest"],
+    })) as string;
+    return Number(BigInt(hex)) / 1e18;
+  } catch {
+    return null;
+  }
+}
+
+/** Current chain id the wallet is on, as a decimal number. */
+export async function getChainId(): Promise<number | null> {
+  const eth = getEthereum();
+  if (!eth) return null;
+  try {
+    const hex = (await eth.request({ method: "eth_chainId" })) as string;
+    return Number(BigInt(hex));
+  } catch {
+    return null;
+  }
+}
+
+/** Ask the wallet to switch to Monad testnet (adds it if unknown). */
+export async function switchToMonad(): Promise<void> {
+  const eth = getEthereum();
+  if (!eth) return;
+  await ensureMonadChain(eth);
+}
+
+/**
+ * Best-effort disconnect: newer wallets support revoking the eth_accounts
+ * permission. If unsupported, the UI simply forgets the account locally.
+ */
+export async function disconnect(): Promise<void> {
+  const eth = getEthereum();
+  if (!eth) return;
+  try {
+    await eth.request({
+      method: "wallet_revokePermissions",
+      params: [{ eth_accounts: {} }],
+    });
+  } catch {
+    // not supported everywhere — local state is cleared by the caller
+  }
+}
+
 /**
  * Inscribe a flower genome ON-CHAIN, player-funded: a self-transaction on Monad
  * testnet whose calldata carries the genome JSON. No server wallet needed — the

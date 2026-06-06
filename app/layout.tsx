@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Silkscreen } from "next/font/google";
 import "./globals.css";
+import MobileNav from "@/components/MobileNav";
 
 const display = Silkscreen({
   weight: "400",
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="en" className={display.variable}>
       <body className="min-h-screen font-display text-zinc-800 antialiased">
         {children}
+        <MobileNav />
       </body>
     </html>
   );

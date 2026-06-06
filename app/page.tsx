@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FlowerPreview from "@/components/FlowerPreview";
 import RarityBadge from "@/components/RarityBadge";
+import WalletButton from "@/components/WalletButton";
 import { MonadLogo, LunarstrategyLogo } from "@/components/Logos";
 import { genomeFromSeed } from "@/lib/flower-random";
 import { computeRarity } from "@/lib/rarity";
@@ -36,16 +37,19 @@ const TRAITS = [
 
 export default function Landing() {
   return (
-    <main className="min-h-screen text-zinc-800">
+    <main className="min-h-screen pb-24 text-zinc-800 sm:pb-0">
       {/* Nav */}
       <nav className="flex items-center justify-between px-5 py-4">
         <span className="brand-title font-display text-lg">
           FLOWER<span className="brand-dot">MON</span>
         </span>
         <div className="flex items-center gap-2 text-xs">
-          <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
-          <Link href="/blitz" className="pill rounded-full px-3 py-1.5">Blitz Garden</Link>
-          <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">Play</Link>
+          <div className="hidden items-center gap-2 sm:flex">
+            <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
+            <Link href="/blitz" className="pill rounded-full px-3 py-1.5">Blitz Garden</Link>
+            <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">Play</Link>
+          </div>
+          <WalletButton />
         </div>
       </nav>
 

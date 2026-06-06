@@ -5,6 +5,7 @@ import Link from "next/link";
 import BlitzGarden, { type BlitzFlower } from "@/components/BlitzGarden";
 import FlowerPreview from "@/components/FlowerPreview";
 import RarityBadge from "@/components/RarityBadge";
+import WalletButton from "@/components/WalletButton";
 import { PLAYER_FLOWERS } from "@/lib/fake-players";
 import { loadCollection, addOwnedGenome } from "@/lib/collection";
 import { computeRarity } from "@/lib/rarity";
@@ -55,7 +56,7 @@ export default function BlitzGardenPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden text-zinc-800">
+    <div className="flex h-[calc(100dvh-56px)] flex-col overflow-hidden text-zinc-800 sm:h-screen">
       {/* Nav */}
       <nav className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 bg-white/70 px-3 py-2.5 backdrop-blur-md">
         <div className="flex items-center gap-2">
@@ -67,7 +68,8 @@ export default function BlitzGardenPage() {
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] sm:text-xs">
-          <Link href="/cards" className="pill rounded-full px-3 py-1.5">Cards</Link>
+          <Link href="/cards" className="pill hidden rounded-full px-3 py-1.5 sm:inline-block">Cards</Link>
+          <WalletButton />
           <Link href="/play" className="btn-bump rounded-full px-3 py-1.5 font-medium">
             <span className="hidden sm:inline">Grow a Flower</span>
             <span className="sm:hidden">Play</span>
